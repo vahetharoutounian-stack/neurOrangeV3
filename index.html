@@ -180,26 +180,6 @@
       transform:scale(1.25);
     }
   
-/* === Compact Audio Dock (visible, top z-index) === */
-#audioDock{
-  position:fixed;
-  left:calc(8px + env(safe-area-inset-left));
-  bottom:calc(8px + env(safe-area-inset-bottom));
-  z-index:2147483647;
-  display:flex; align-items:center; gap:6px;
-  padding:6px 8px; border-radius:999px;
-  background:#FF6600; color:#fff;
-  box-shadow:0 8px 18px rgba(255,102,0,.30);
-  border:1px solid rgba(0,0,0,.35);
-  -webkit-user-select:none; user-select:none;
-}
-;#audioDock button{
-  background:transparent; border:0; color:#fff;
-  font-weight:900; font-size:14px; line-height:1;
-  padding:4px 6px; cursor:pointer;
-}
-#audioDock input[type="range"]{ width:90px; accent-color:#fff; }
-
 
     /* === Capture Favorites Overlay (iPhone-fit) === */
     .export-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(2px);display:flex;align-items:center;justify-content:center;z-index:2147483647;overflow:hidden;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -317,7 +297,6 @@
 }
 </style>
 
-
 <style id="injected-tweaks-no-crosshair-heart-glow">
 /* Remove crosshairs from LIBRARY swatches only */
 .card .sw::before,
@@ -344,7 +323,6 @@
   z-index:-1;
 }
 </style>
-
 
 <style id="injected-tweaks-restore-library-layout">
 /* === Restore original library swatch layout (swatch on top, meta below) === */
@@ -384,152 +362,13 @@
 }
 </style>
 
-
 <style id="injected-hide-hint">#secretPoem .hint{display:none !important;}</style>
   <!-- Custom audio player styles for the persistent bottom-left dock -->
-  <style id="audio-player-styles">
-    /* Hide the old compact audio dock to avoid duplicate players */
-    #audioDock{ display:none !important; }
-    /* Nickelodeon Orange audio dock container */
-    #audioDock2{
-      position:fixed;
-      left:calc(8px + env(safe-area-inset-left));
-      bottom:calc(8px + env(safe-area-inset-bottom));
-      z-index:2147483647;
-      display:flex;
-      align-items:center;
-      gap:10px;
-      padding:10px 12px;
-      border-radius:999px;
-      background:#FF6600;
-      border:1px solid rgba(0,0,0,.35);
-      box-shadow:0 8px 22px rgba(255,102,0,.35);
-      -webkit-user-select:none;
-      user-select:none;
-    }
-    /* Stop button styling */
-    .ad-stop{
-      width:42px;
-      height:42px;
-      min-width:42px;
-      border-radius:50%;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      font-size:22px;
-      line-height:1;
-      border:0;
-      cursor:pointer;
-      background:#ffffff;
-      box-shadow:0 2px 6px rgba(0,0,0,.25);
-      transition:transform .06s ease, box-shadow .2s ease, opacity .15s ease;
-    }
-    .ad-stop:active{ transform:translateY(1px); }
-    /* Track buttons */
-    .ad-btn{
-      width:42px;
-      height:42px;
-      min-width:42px;
-      border-radius:50%;
-      display:inline-flex;
-      align-items:center;
-      justify-content:center;
-      font-size:22px;
-      line-height:1;
-      border:0;
-      cursor:pointer;
-      background:#ffffff;
-      box-shadow:0 2px 6px rgba(0,0,0,.25);
-      transition:transform .06s ease, box-shadow .2s ease, opacity .15s ease;
-    }
-    .ad-btn:active{ transform:translateY(1px); }
-    .ad-btn.active{
-      outline:2px solid rgba(255,255,255,.85);
-      box-shadow:0 4px 14px rgba(0,0,0,.35), 0 0 0 2px #ffffff inset;
-      background:#fdfdfd;
-    }
-    /* Wrapper for volume slider popovers */
-    #audioDock2 .ad-wrap{ position:relative; }
-    /* Volume slider container */
-    .ad-vol{
-      position:absolute;
-      bottom:58px;
-      width:44px;
-      padding:8px 6px;
-      border-radius:12px;
-      background:rgba(22,22,22,.92);
-      border:1px solid rgba(255,255,255,.2);
-      box-shadow:0 10px 24px rgba(0,0,0,.45);
-      display:none;
-    }
-    .ad-vol.visible{ display:block; }
-    .ad-vol label{
-      color:#ffffff;
-      font-size:11px;
-      opacity:0.8;
-      display:block;
-      text-align:center;
-      margin-bottom:6px;
-    }
-    /* Vertical range slider styling */
-    .ad-vol input[type="range"]{
-      writing-mode: bt-lr;
-      -webkit-appearance: slider-vertical;
-      width:30px;
-      height:110px;
-      padding:0;
-      margin:0 auto;
-      background:transparent;
-    }
-    .ad-vol input[type="range"]::-webkit-slider-thumb{
-      -webkit-appearance: none;
-      width:18px;
-      height:18px;
-      border-radius:50%;
-      background:#FF6600;
-      border:1px solid rgba(0,0,0,.35);
-      box-shadow:0 1px 4px rgba(0,0,0,.35);
-    }
-    .ad-vol input[type="range"]::-webkit-slider-runnable-track{
-      width:6px;
-      background:#dddddd;
-      border-radius:999px;
-      border:0;
-    }
-    .ad-vol input[type="range"]::-moz-range-thumb{
-      width:18px;
-      height:18px;
-      border-radius:50%;
-      background:#FF6600;
-      border:1px solid rgba(0,0,0,.35);
-    }
-    .ad-vol input[type="range"]::-moz-range-track{
-      width:6px;
-      background:#dddddd;
-      border-radius:999px;
-      border:0;
-    }
-  </style>
-</head>
+  </head>
 <body>
 
-<div id="audioDock" role="group" aria-label="Audio controls">
-  <button id="audioToggle" aria-label="Play/pause">►</button>
-  <input id="audioVol" type="range" min="0" max="100" value="10" aria-label="Volume" />
-</div>
-
 <!-- Persistent audio player (Nickelodeon orange) anchored bottom-left. Each track toggles between a sprout emoji and its playing icon. A vertical volume slider appears while active. -->
-<div id="audioDock2" role="group" aria-label="Audio Player">
-  <!-- Stop button (orange square) -->
-  <button class="ad-stop" id="adStop" title="Stop all">🟧</button>
-  <!-- Track 1: Sparkle ✨ -->
-  <div class="ad-wrap">
-    <button class="ad-btn" data-track="sparkle" title="Sparkle ✨">🌱</button>
-    <div class="ad-vol" data-for="sparkle">
-      <label>✨</label>
-      <input type="range" min="0" max="1" step="0.01" value="0.6"/>
-    </div>
-  </div>
+</div>
   <!-- Track 2: Orange 🍊 -->
   <div class="ad-wrap">
     <button class="ad-btn" data-track="orange" title="Orange 🍊">🌱</button>
@@ -560,8 +399,6 @@
   <audio id="aud_autumn"  preload="metadata" playsinline src="media/autumn.mp3"></audio>
   <audio id="aud_storm"   preload="metadata" playsinline src="media/storm.mp3"></audio>
 </div>
-
-
 
 <!-- Page 1 -->
 <section id="p1" class="active">
@@ -965,8 +802,6 @@ const ORANGE_LIBRARY = {
     { name:"Hungry Ghost Orange", hex:"#D2B265", fun:"Refers to lantern offerings for restless spirits in the Ghost Festival.", significance:"A warm, candlelit orange guiding wayward souls to comfort and rest. Falls squarely in the orange opponent band for crisp afterimages on iPhone P3.", opponent:"#6484D2", persian:false } 
   ]
 };
-
-
 
 /* ====================== Page 1 Demo Animation ====================== */
 (function animateDemo(){
@@ -1878,241 +1713,6 @@ updateButtons();
 drawPreview();
 </script>
 <script>
-
-// === Compact Audio Dock ===
-(function(){
-  var A = document.getElementById('homeAudio');
-  var T = document.getElementById('audioToggle');
-  var V = document.getElementById('audioVol');
-  if(!A||!T||!V) return;
-  A.volume = 0.10; V.value = 10;
-  function icon(){ T.textContent = A.paused ? '►' : '❚❚'; }
-  // iOS unlock on first pointer
-  function unlock(){ try{ A.play().then(()=>A.pause()).catch(()=>{});}catch(e){} document.removeEventListener('pointerdown', unlock, true); }
-  document.addEventListener('pointerdown', unlock, true);
-  T.addEventListener('click', async function(){
-    try { if(A.paused){ await A.play(); } else { A.pause(); } } catch(e){}
-    icon();
-  }, {passive:true});
-  V.addEventListener('input', function(){ A.volume = Math.max(0, Math.min(1, V.value/100)); }, {passive:true});
-  A.addEventListener('ended', icon); A.addEventListener('pause', icon); A.addEventListener('play', icon);
-  icon();
-})();
-// === /Compact Audio Dock ===
-
-
-// === Decorate CAPTURE FAVORITES with animated oranges ===
-(function initCaptureAnimatedButtons(){
-  function collectOranges(){
-    const out = [];
-    try{
-      if (Array.isArray(window.library)){
-        const push = (item)=>{ const h=(item&&item.hex||'').toUpperCase(); if(/^#([0-9A-F]{6})$/.test(h)) out.push(h); };
-        window.library.forEach(group=>{
-          if (group && Array.isArray(group.items)) group.items.forEach(push);
-          else if (Array.isArray(group)) group.forEach(push);
-        });
-      }
-    }catch(e){}
-    return out.length ? out : ['#FF7F00','#FF8C00','#FF9400','#FFA000','#FFA500','#FFB347','#FF7E2D','#FF6A00','#FFAE42','#FF7500','#FF9F1C','#FF7F11'];
-  }
-  const colors = collectOranges();
-  const grad = colors.join(',');
-  document.documentElement.style.setProperty('--cap-grad', grad);
-  let i=0;
-  setInterval(()=>{
-    const c1 = colors[i % colors.length];
-    const c2 = colors[(i+4) % colors.length];
-    document.documentElement.style.setProperty('--cap-glow', c1);
-    document.documentElement.style.setProperty('--cap-glow2', c2);
-    document.documentElement.style.setProperty('--cap-text', c1);
-    i++;
-  }, 900);
-
-  function decorate(btn){
-    if (!btn) return;
-    btn.classList.add('capture-animated');
-    // Wrap/replace label with stylable span
-    const label = btn.querySelector('.cap-label') || (function(){ const s=document.createElement('span'); s.className='cap-label'; btn.textContent=''; btn.appendChild(s); return s; })();
-    label.textContent = 'CAPTURE FAVORITES';
-  }
-  function run(){ decorate(document.getElementById('btnExport')); }
-  if (document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', run); }
-  else { run(); }
-  // If UI rebuilds, decorate again later
-  setTimeout(run, 50); setTimeout(run, 300); setTimeout(run, 1000);
-})();
-
-// === Capture Favorites: iPhone-fit overlay ===
-(function(){
-  function getFavorites(){
-    try{ if (window.state && Array.isArray(state.favorites) && state.favorites.length) return state.favorites; }catch(e){}
-    const keys = ['neurOrangeFavorites:v2','neurOrangeFavorites','neurOrange_favorites'];
-    for (const k of keys){
-      try{
-        const raw = localStorage.getItem(k);
-        if (raw){ const arr = JSON.parse(raw); if (Array.isArray(arr) && arr.length) return arr; }
-      }catch(e){}
-    }
-    return [];
-  }
-  // Double-tap helper
-  if (typeof window.setupDoubleTap!=='function'){
-    window.setupDoubleTap = function(el, handler){
-      let last=0;
-      const onHit = (e)=>{ const now=Date.now(); if(now-last<320){ handler(e); } last=now; };
-      el.addEventListener('click', onHit, {passive:true});
-      el.addEventListener('touchend', onHit, {passive:true});
-    };
-  }
-  function chooseGrid(n){
-    if (n<=9) return [3,3];
-    if (n<=12) return [3,4];
-    if (n<=15) return [3,5];
-    return [4,6];
-  }
-  function sizeToViewport(overlay, modal, cols, rows){
-    const gw = cols*360, gh = rows*300;
-    const vw = overlay.clientWidth || window.innerWidth;
-    const vh = overlay.clientHeight || window.innerHeight;
-    const scale = Math.min((vw-8)/gw, (vh-8)/gh, 1);
-    modal.style.width = gw+'px';
-    modal.style.height= gh+'px';
-    modal.style.transform = 'scale('+scale+')';
-    overlay.__gridCols=cols; overlay.__gridRows=rows; overlay.__modalRef=modal;
-  }
-  window.exportFavoritesModal = function(){
-    const favs = getFavorites();
-    if (!favs.length){ alert('No favorites to capture.'); return; }
-    const [cols,rows] = chooseGrid(favs.length);
-    const maxItems = cols*rows;
-    const list = favs.slice(0,maxItems);
-    const ordered = (typeof window.maxContrastOrder==='function') ? window.maxContrastOrder(list) : list;
-
-    let overlay = document.getElementById('exportModalOverlay');
-    let modal, grid;
-    if (!overlay){
-      overlay = document.createElement('div');
-      overlay.id='exportModalOverlay';
-      overlay.className='export-overlay hidden';
-      modal = document.createElement('div');
-      modal.className='export-modal';
-      grid = document.createElement('div');
-      grid.className='export-grid'; grid.id='exportGridContainer';
-      modal.appendChild(grid);
-      overlay.appendChild(modal);
-      document.body.appendChild(overlay);
-      // dismiss on backdrop click
-      overlay.addEventListener('click', (e)=>{ if(e.target===overlay) overlay.classList.add('hidden'); });
-      // double-tap anywhere closes
-      setupDoubleTap(modal, ()=> overlay.classList.add('hidden'));
-      setupDoubleTap(overlay, ()=> overlay.classList.add('hidden'));
-      // Safely attach actions to the export toolbar if it exists. Some bundlers remove
-      // references to the toolbar variable, so query for the element inside the overlay.
-      try {
-        const toolbarEl = overlay.querySelector('.export-toolbar') || document.querySelector('.export-toolbar');
-        if (toolbarEl) {
-          const exitBtn = toolbarEl.querySelector('#expExit');
-          const clearBtn = toolbarEl.querySelector('#expClearFav');
-          if (exitBtn) exitBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            try { showPage('p2'); } catch (_) {}
-            overlay.classList.add('hidden');
-          });
-          if (clearBtn) clearBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            try { if (window.state && Array.isArray(state.favorites)) state.favorites.length = 0; } catch (_) {}
-            try { if (typeof saveFavorites === 'function') saveFavorites(); } catch (_) {}
-            try { localStorage.removeItem('neurOrangeFavorites:v2'); localStorage.removeItem('neurOrangeFavorites'); localStorage.removeItem('neurOrange_favorites'); } catch (_) {}
-            try { if (typeof updateFavoritesDropdown === 'function') updateFavoritesDropdown(); } catch (_) {}
-            try { if (typeof buildLibrary === 'function') buildLibrary(); } catch (_) {}
-            try { if (typeof updateButtons === 'function') updateButtons(); } catch (_) {}
-            overlay.classList.add('hidden');
-          });
-        }
-      } catch (err) {
-        // no toolbar found; nothing to bind
-      }
-      // resize listeners
-      const resizer = ()=>{ if (overlay.__modalRef) sizeToViewport(overlay, overlay.__modalRef, overlay.__gridCols||cols, overlay.__gridRows||rows); };
-      window.addEventListener('resize', resizer);
-      window.addEventListener('orientationchange', resizer);
-    }else{
-      modal = overlay.querySelector('.export-modal');
-      grid  = document.getElementById('exportGridContainer');
-    }
-
-    grid.style.gridTemplateColumns = 'repeat('+cols+',360px)';
-    grid.innerHTML='';
-    ordered.forEach(item=>{
-      const name = item.name || item.title || '';
-      const hex  = String(item.hex||'').toUpperCase();
-      const desc = [item.fun,item.significance,item.desc,item.description].filter(Boolean).join(' ');
-      const tile = document.createElement('div'); tile.className='export-tile'; tile.style.background=hex||'#000';
-      const nEl=document.createElement('div'); nEl.className='export-name'; nEl.textContent=name;
-      const hEl=document.createElement('div'); hEl.className='export-hex';  hEl.textContent=hex;
-      const dEl=document.createElement('div'); dEl.className='export-desc'; dEl.textContent=desc;
-      tile.appendChild(nEl); tile.appendChild(hEl); tile.appendChild(dEl); grid.appendChild(tile);
-    });
-
-    overlay.classList.remove('hidden');
-    sizeToViewport(overlay, modal, cols, rows);
-  };
-
-  // Bind the CAPTURE button(s)
-  function bind(){
-    const ids=['btnExport','btnExportBottom'];
-    ids.forEach(id=>{
-      const b=document.getElementById(id);
-      if (b && !b.__capBound){ b.__capBound=true; b.addEventListener('click', window.exportFavoritesModal); }
-    });
-  }
-  if (document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', bind); }
-  else { bind(); }
-  setTimeout(bind,50); setTimeout(bind,300); setTimeout(bind,1000);
-})();
-
-// Bind inline Clear Favorites under Capture
-(function bindInlineClearFavorites(){
-  function clearFavs(){
-    try{
-      if (window.state && Array.isArray(state.favorites)){
-        // Replace the favourites array with a fresh empty array rather than simply truncating it.
-        // Some parts of the UI may keep a reference to the original array when the library
-        // was built.  Reassigning a new array ensures those references no longer see any
-        // favourites and helps prevent lingering heart icons from rendering.
-        state.favorites = [];
-      }
-    }catch(_){}
-    /*
-      When clearing favourites, ensure any visible heart icons on library cards
-      are also hidden immediately.  Hearts are created with `display:none` by
-      default and only set to `block` when a colour is favourited.  If the
-      favourites list is cleared but the library isn’t rebuilt right away (for
-      example, due to an asynchronous UI update or a custom tab), some hearts
-      could linger on the cards.  Clearing them here prevents stale hearts
-      from persisting until the next library refresh.
-    */
-    try{
-      document.querySelectorAll('.heart').forEach(h => { h.style.display = 'none'; });
-    }catch(_){}
-    try{ if (typeof saveFavorites==='function') saveFavorites(); }catch(_){}
-    try{ localStorage.removeItem('neurOrangeFavorites:v2'); localStorage.removeItem('neurOrangeFavorites'); localStorage.removeItem('neurOrange_favorites'); }catch(_){}
-    try{ if (typeof updateFavoritesDropdown==='function') updateFavoritesDropdown(); }catch(_){}
-    try{ if (typeof buildLibrary==='function') buildLibrary(); }catch(_){}
-    try{ if (typeof updateButtons==='function') updateButtons(); }catch(_){}
-  }
-  function bind(){
-    const b=document.getElementById('btnClearFavInline');
-    if(b && !b.__bound){ b.__bound=true; b.addEventListener('click', (e)=>{ e.preventDefault(); clearFavs(); }); }
-  }
-  if (document.readyState==='loading'){ document.addEventListener('DOMContentLoaded', bind); }
-  else { bind(); }
-  setTimeout(bind,50); setTimeout(bind,300); setTimeout(bind,1000);
-})();
-</script>
-
-<script>
 // Summary boxes behave like toggles for active parameter; also keep text selectable.
 (function(){
   function bindSummaryClicks(){
@@ -2136,7 +1736,6 @@ drawPreview();
 })();
 </script>
 
-
 <!-- Secret poem overlay: long-press Bergamot to reveal -->
 <div id="secretPoem" aria-modal="true" role="dialog">
   <div class="poemBox">
@@ -2153,7 +1752,6 @@ drawPreview();
     </div>
     </div>
 </div>
-
 
 <script id="injected-swatches-poem-js">
 (function(){
@@ -2253,136 +1851,5 @@ drawPreview();
 })();
 </script>
 
-  <!-- Audio player logic: toggles tracks, manages volume sliders and stop button. Wrap in an IIFE to avoid polluting global scope. -->
-  <script>
-  (function(){
-    // Define track metadata: mapping to play icon and audio element ID
-    const TRACKS = {
-      sparkle: { on:'✨', el:'aud_sparkle' },
-      orange:  { on:'🍊', el:'aud_orange'  },
-      autumn:  { on:'🍂', el:'aud_autumn'  },
-      storm:   { on:'⛈️', el:'aud_storm'   },
-    };
-    const DOCK = document.getElementById('audioDock2');
-    const STOP = document.getElementById('adStop');
-    // Helpers to select DOM elements
-    const btnSel = name => DOCK ? DOCK.querySelector(`.ad-btn[data-track="${name}"]`) : null;
-    const volSel = name => DOCK ? DOCK.querySelector(`.ad-vol[data-for="${name}"]`) : null;
-    const audSel = name => document.getElementById(TRACKS[name].el);
-    const SEED = '🌱';
-    const ACTIVE = new Set();
-    // Unlock audio context after first pointer interaction (iOS Safari requires a user gesture)
-    const unlock = () => {
-      Object.keys(TRACKS).forEach(name => {
-        const a = audSel(name);
-        if(!a) return;
-        try {
-          const p = a.play();
-          if(p !== undefined){ p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {}); }
-        } catch(_){ }
-      });
-      document.removeEventListener('pointerdown', unlock, true);
-    };
-    document.addEventListener('pointerdown', unlock, true);
-    // Position the volume slider above its button. Clamp horizontal offset to keep on screen.
-    function positionSlider(btn, vol){
-      if(!btn || !vol) return;
-      const dockRect = DOCK.getBoundingClientRect();
-      const btnRect  = btn.getBoundingClientRect();
-      const left = (btnRect.left + btnRect.width/2) - (dockRect.left + 22);
-      const offset = Math.max(-6, Math.min(left - 22, 220));
-      vol.style.left = offset + 'px';
-    }
-    // Toggle playback for a given track
-    function toggleTrack(name){
-      const btn = btnSel(name);
-      const vol = volSel(name);
-      const aud = audSel(name);
-      if(!btn || !vol || !aud) return;
-      if(ACTIVE.has(name)){
-        // Stop this track
-        try { aud.pause(); aud.currentTime = 0; } catch(_){}
-        ACTIVE.delete(name);
-        btn.textContent = SEED;
-        btn.classList.remove('active');
-        vol.classList.remove('visible');
-      } else {
-        // Stop other tracks and hide their sliders
-        Object.keys(TRACKS).forEach(other => {
-          if(other !== name && ACTIVE.has(other)){
-            const audX = audSel(other);
-            const btnX = btnSel(other);
-            const volX = volSel(other);
-            try { audX.pause(); audX.currentTime = 0; } catch(_){}
-            ACTIVE.delete(other);
-            if(btnX){ btnX.textContent = SEED; btnX.classList.remove('active'); }
-            if(volX){ volX.classList.remove('visible'); }
-          }
-        });
-        // Start the selected track
-        try { aud.play().catch(()=>{}); } catch(_){}
-        ACTIVE.add(name);
-        btn.textContent = TRACKS[name].on;
-        btn.classList.add('active');
-        positionSlider(btn, vol);
-        vol.classList.add('visible');
-      }
-    }
-    // Stop all tracks and reset UI
-    function stopAll(){
-      Object.keys(TRACKS).forEach(name => {
-        const aud = audSel(name);
-        const btn = btnSel(name);
-        const vol = volSel(name);
-        try { aud.pause(); aud.currentTime = 0; } catch(_){}
-        ACTIVE.delete(name);
-        if(btn){ btn.textContent = SEED; btn.classList.remove('active'); }
-        if(vol){ vol.classList.remove('visible'); }
-      });
-    }
-    // Bind click handlers on track buttons
-    if(DOCK){
-      DOCK.querySelectorAll('.ad-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const name = btn.getAttribute('data-track');
-          toggleTrack(name);
-        });
-      });
-    }
-    // Bind stop button
-    if(STOP){ STOP.addEventListener('click', stopAll); }
-    // Setup volume sliders: set initial volumes and persist changes
-    if(DOCK){
-      DOCK.querySelectorAll('.ad-vol').forEach(wrap => {
-        const name = wrap.getAttribute('data-for');
-        const aud  = audSel(name);
-        const rng  = wrap.querySelector('input[type="range"]');
-        if(!aud || !rng) return;
-        // Initialize volume from saved value or default
-        try {
-          const saved = localStorage.getItem('advol_'+name);
-          if(saved !== null){
-            aud.volume = rng.value = parseFloat(saved);
-          } else {
-            aud.volume = parseFloat(rng.value);
-          }
-        } catch(_){ aud.volume = parseFloat(rng.value); }
-        rng.addEventListener('input', () => {
-          const v = parseFloat(rng.value);
-          aud.volume = v;
-          try { localStorage.setItem('advol_'+name, v); } catch(_){}
-        });
-        // Reposition slider on resize/orientation change
-        window.addEventListener('resize', () => {
-          if(wrap.classList.contains('visible')){
-            const btn = btnSel(name);
-            positionSlider(btn, wrap);
-          }
-        });
-      });
-    }
-  })();
-  </script>
-
-</body>
+  </body>
 </html>
