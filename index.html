@@ -1737,7 +1737,15 @@ document.getElementById('start').addEventListener('click',()=>{ if(Date.now()-st
     showPage('p2');
   });
 });
-['btnFinish','btnFinishBottom'].forEach(id=>document.getElementById(id).addEventListener('click',()=>showPage('p1')));
+// When the user clicks either Finish button, navigate to the external neurOrange link instead of
+// returning to the first page. This opens the requested URL directly.
+['btnFinish','btnFinishBottom'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('click', () => {
+    window.location.href = 'https://vahetharoutounian-stack.github.io/neurOrange/';
+  });
+});
 // Attach the test runner to the Start button using setupTap.  Using setupTap ensures
 // both touch and click events trigger the test reliably without duplicating
 // events or race conditions.  We remove the explicit event listeners here
