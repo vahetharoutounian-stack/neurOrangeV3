@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>neurOrange — Audio Dock (Storm-only Autoplay, Fixed)</title>
+<title>neurOrange — Audio Dock (Storm-only Autoplay, WebAudio volume)</title>
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
@@ -99,7 +99,7 @@
   #audioDock2:not(.collapsed) #adToggle{ animation:bergamotPulse 1.6s ease-in-out infinite; }
   @media (prefers-reduced-motion:reduce){ #audioDock2:not(.collapsed) #adToggle{ animation:none } }
 
-  /* Demo header (keep or remove) */
+  /* Demo page content (replace/extend with your app) */
   h2.title{font-weight:900;margin:0 0 8px;text-align:center}
   .panel{max-width:720px;margin:12px auto;padding:14px;border:1px solid rgba(255,255,255,.2);border-radius:12px;background:rgba(255,255,255,.04)}
 </style>
@@ -108,7 +108,7 @@
 
 <div class="wrap">
   <h1>neurOrange — Audio Dock</h1>
-  <p class="desc">Storm-only autoplay, working play/pause, sliders at 75% (iOS-safe). Replace this header with your content.</p>
+  <p class="desc">Storm-only autoplay, WebAudio volume (sliders work on iOS), exclusive melodic tracks.</p>
 </div>
 
 <!-- ====== Audio Dock ====== -->
@@ -116,28 +116,24 @@
   <button class="ad-toggle" id="adToggle" title="Expand/Collapse">🟠</button>
   <button class="ad-play"   id="adPlay"   title="Play/Pause">▶</button>
 
-  <!-- Sparkle -->
   <div class="ad-wrap">
     <button class="ad-btn" data-track="sparkle" title="Sparkle">🌱</button>
     <div class="ad-vol" data-for="sparkle"><label>✨</label>
       <input type="range" min="0" max="1" step="0.01" value="0.75"></div>
   </div>
 
-  <!-- Orange -->
   <div class="ad-wrap">
     <button class="ad-btn" data-track="orange" title="Orange">🌱</button>
     <div class="ad-vol" data-for="orange"><label>🍊</label>
       <input type="range" min="0" max="1" step="0.01" value="0.75"></div>
   </div>
 
-  <!-- Autumn -->
   <div class="ad-wrap">
     <button class="ad-btn" data-track="autumn" title="Autumn">🌱</button>
     <div class="ad-vol" data-for="autumn"><label>🍂</label>
       <input type="range" min="0" max="1" step="0.01" value="0.75"></div>
   </div>
 
-  <!-- Storm -->
   <div class="ad-wrap">
     <button class="ad-btn" data-track="storm" title="Storm">🌱</button>
     <div class="ad-vol" data-for="storm"><label>⛈️</label>
@@ -151,16 +147,14 @@
   <audio id="aud_storm"   preload="metadata" playsinline src="tracks/storm.mp3"></audio>
 </div>
 
-<!-- ====== Your main page content (optional demo) ====== -->
 <div class="panel">
   <h2 class="title">Page Content</h2>
-  <p>This is a minimal content panel. Replace with your Step 1/2/3 sections or gallery.</p>
+  <p>Replace with your Step 1/2/3 content. The dock is fully functional on iOS and desktop.</p>
 </div>
 
-<!-- ====== Audio Logic (fixed) ====== -->
 <script>
 (function(){
-  // Track metadata (Storm ambient; others melodic/exclusive)
+  // Tracks: Storm ambient (can layer); others melodic/exclusive
   const TRACKS = {
     sparkle:{ on:'✨', el:'aud_sparkle', group:'melodic' },
     orange: { on:'🍊', el:'aud_orange',  group:'melodic' },
@@ -173,6 +167,11 @@
   const PLAY   = document.getElementById('adPlay');
   const SEED   = '🌱';
   const ACTIVE = new Set();
+
+  // WebAudio graph (fixes iOS volume): one GainNode per track
+  let AC = null;                       // AudioContext
+  const GAINS = Object.create(null);   // name -> GainNode
+  const SOURCES = Object.create(null); // name -> MediaElementSourceNode
   let unlocked = false;
 
   const btn = n => DOCK.querySelector(`.ad-btn[data-track="${n}"]`);
@@ -186,6 +185,24 @@
   function setIcon(){ if(PLAY) PLAY.textContent = anyPlaying() ? '⏸' : '▶'; }
   function center(v){ if(v){ v.style.left='50%'; v.style.transform='translateX(-50%)'; } }
 
+  function ensureAC(){
+    if(AC) return AC;
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return null;
+    AC = new Ctx();
+    return AC;
+  }
+  function ensureGraph(name){
+    const a = aud(name); if(!a) return null;
+    const ac = ensureAC(); if(!ac) return null;
+    if(!SOURCES[name]){
+      SOURCES[name] = ac.createMediaElementSource(a);
+      GAINS[name]   = ac.createGain();
+      SOURCES[name].connect(GAINS[name]).connect(ac.destination);
+    }
+    return GAINS[name];
+  }
+
   function deactivate(name){
     const a=aud(name), b=btn(name), v=vol(name);
     if(a){ try{ a.pause(); a.currentTime=0; }catch(_){} }
@@ -197,7 +214,9 @@
     const info=TRACKS[name]; if(!info) return;
     if(info.group==='melodic'){ [...ACTIVE].forEach(o=>{ if(TRACKS[o].group==='melodic' && o!==name) deactivate(o); }); }
     const a=aud(name), b=btn(name), v=vol(name);
-    if(a){ a.loop=(name==='storm'); a.play().catch(()=>{}); }
+    const g = ensureGraph(name);
+    if(g) { try{ AC.resume(); }catch(_){} } // in case AC was suspended
+    if(a){ a.loop = (name==='storm'); a.play().catch(()=>{}); }
     ACTIVE.add(name);
     if(b){ b.textContent=info.on; b.classList.add('active'); }
     if(v){ center(v); v.classList.add('visible'); }
@@ -208,38 +227,53 @@
     setIcon();
   }
 
-  // Volumes (default .75; persist)
+  // Volumes (use WebAudio Gain on iOS/desktop; fallback to element volume)
   function initVolumes(){
     Object.keys(TRACKS).forEach(name=>{
-      const a=aud(name), r=vol(name)?.querySelector('input[type="range"]'); if(!a||!r) return;
-      const saved=localStorage.getItem('advol_'+name);
-      const def=parseFloat(r.value||'0.75')||0.75;
-      const v=saved!=null?parseFloat(saved):def;
-      a.volume=v; r.value=String(v);
-      const onChange=()=>{ const nv=Math.max(0,Math.min(1,parseFloat(r.value||'0'))); a.volume=nv; try{localStorage.setItem('advol_'+name,nv);}catch(_){} };
-      r.addEventListener('input',onChange,{passive:true});
-      r.addEventListener('change',onChange,{passive:true});
+      const a = aud(name), r = vol(name)?.querySelector('input[type="range"]'); if(!a||!r) return;
+      const saved = localStorage.getItem('advol_'+name);
+      const def   = parseFloat(r.value||'0.75')||0.75;
+      const g     = ensureGraph(name);
+      if(g){
+        const v = saved!=null ? parseFloat(saved) : def;
+        g.gain.value = v; r.value = String(v);
+        const on = ()=>{ const nv=Math.max(0,Math.min(1,parseFloat(r.value||'0'))); g.gain.value = nv; try{localStorage.setItem('advol_'+name,nv);}catch(_){} };
+        r.addEventListener('input',on,{passive:true});
+        r.addEventListener('change',on,{passive:true});
+        // keep <audio> full-scale so gain controls actual loudness
+        a.volume = 1;
+      }else{
+        // fallback if AudioContext unsupported
+        const v = saved!=null ? parseFloat(saved) : def;
+        a.volume = v; r.value = String(v);
+        const on = ()=>{ const nv=Math.max(0,Math.min(1,parseFloat(r.value||'0'))); a.volume=nv; try{localStorage.setItem('advol_'+name,nv);}catch(_){} };
+        r.addEventListener('input',on,{passive:true});
+        r.addEventListener('change',on,{passive:true});
+      }
     });
   }
 
-  // iOS-safe unlock: silently prime all, then Storm-only
+  // iOS-safe unlock: prime muted, build graph, then Storm-only
   function unlock(){
     if(unlocked) return;
+    const ac = ensureAC();
+    // Prime and unmute
     Object.keys(TRACKS).forEach(name=>{
-      const a=aud(name); if(!a) return;
-      const prev=a.volume; a.muted=true;
-      const p=a.play();
+      const a = aud(name); if(!a) return;
+      ensureGraph(name);
+      const prev = a.volume; a.muted = true;
+      const p = a.play();
       (p&&p.then?p:Promise.resolve()).then(()=>{
         a.pause(); a.currentTime=0; a.muted=false; a.volume=prev;
       }).catch(()=>{ a.muted=false; a.volume=prev; });
     });
+    try{ ac && ac.resume(); }catch(_){}
     setTimeout(startStormOnly, 0);
-    unlocked=true;
+    unlocked = true;
     document.removeEventListener('pointerdown', unlock, true);
   }
 
   function bind(){
-    // buttons
     DOCK.querySelectorAll('.ad-btn').forEach(b=>{
       b.addEventListener('click',()=>{ const n=b.getAttribute('data-track'); ACTIVE.has(n)?deactivate(n):activate(n); setIcon(); },{passive:true});
     });
