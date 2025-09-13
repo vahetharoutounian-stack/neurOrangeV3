@@ -407,8 +407,8 @@
       -webkit-user-select:none;
       user-select:none;
       /* Scale down the entire player by 20% and keep it anchored to the bottom-left */
-      transform: scale(0.8);
-      transform-origin: bottom left;
+      transform:scale(0.8);
+      transform-origin:bottom left;
     }
     /* Stop button styling */
     .ad-stop{
@@ -442,7 +442,7 @@
       line-height:1;
       border:0;
       cursor:pointer;
-      /* Use saffron fill for the track buttons */
+      /* Use saffron fill for track buttons */
       background:#F4C430;
       box-shadow:0 2px 6px rgba(0,0,0,.25);
       transition:transform .06s ease, box-shadow .2s ease, opacity .15s ease;
@@ -491,8 +491,7 @@
       width:18px;
       height:18px;
       border-radius:50%;
-      /* Match slider thumb to saffron */
-      background:#F4C430;
+      background:#FF6600;
       border:1px solid rgba(0,0,0,.35);
       box-shadow:0 1px 4px rgba(0,0,0,.35);
     }
@@ -506,8 +505,7 @@
       width:18px;
       height:18px;
       border-radius:50%;
-      /* Match slider thumb to saffron */
-      background:#F4C430;
+      background:#FF6600;
       border:1px solid rgba(0,0,0,.35);
     }
     .ad-vol input[type="range"]::-moz-range-track{
@@ -515,6 +513,45 @@
       background:#dddddd;
       border-radius:999px;
       border:0;
+    }
+
+    /* Min/Max (expand/collapse) button */
+    .ad-toggle{
+      width:42px;
+      height:42px;
+      min-width:42px;
+      border-radius:50%;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      line-height:1;
+      border:0;
+      cursor:pointer;
+      /* Use saffron fill for the toggle button */
+      background:#F4C430;
+      box-shadow:0 2px 6px rgba(0,0,0,.25);
+      transition:transform .06s ease, box-shadow .2s ease;
+    }
+    .ad-toggle:active{ transform:translateY(1px); }
+
+    /* Pulse animation when expanded */
+    @keyframes pulseToggle{
+      0%{ box-shadow:0 0 0 0 rgba(255,166,77,.5); }
+      50%{ box-shadow:0 0 0 6px rgba(255,166,77,0); }
+      100%{ box-shadow:0 0 0 0 rgba(255,166,77,.5); }
+    }
+    /* When expanded (not collapsed), pulse the toggle to draw attention */
+    #audioDock2:not(.collapsed) #adToggle{
+      animation:pulseToggle 2s infinite;
+    }
+
+    /* Hide track buttons and volume sliders when collapsed */
+    #audioDock2.collapsed .ad-wrap{
+      display:none;
+    }
+    #audioDock2.collapsed .ad-vol{
+      display:none;
     }
   </style>
 
@@ -565,9 +602,9 @@
 </div>
 
 <!-- Persistent audio player (Nickelodeon orange) anchored bottom-left. Each track toggles between a sprout emoji and its playing icon. A vertical volume slider appears while active. -->
-<div id="audioDock2" role="group" aria-label="Audio Player">
-  <!-- Min/Max button (plays a random track) -->
-  <button class="ad-stop" id="adStop" title="Play a random track">▶</button>
+<div id="audioDock2" role="group" aria-label="Audio Player" class="collapsed">
+  <!-- Expand/Collapse button (min/max). Uses a saffron circle with an orange dot. -->
+  <button class="ad-toggle" id="adToggle" title="Expand or collapse the player">🟠</button>
   <!-- Track 1: Sparkle ✨ -->
   <div class="ad-wrap">
     <button class="ad-btn" data-track="sparkle" title="Sparkle ✨">🌱</button>
@@ -601,9 +638,7 @@
     </div>
   </div>
   <!-- Hidden audio elements (provide your own sources) -->
-  <!-- Adjust audio source paths to match the GitHub folder structure. The tracks live in a
-       top‑level `tracks/` folder alongside this HTML, not in a `media/` folder. Keeping
-       these relative paths ensures the player works when served from GitHub Pages. -->
+  <!-- Audio sources point to the /tracks folder. Adjust if your deployment uses a different folder name. -->
   <audio id="aud_sparkle" preload="metadata" playsinline src="tracks/sparkle.mp3"></audio>
   <audio id="aud_orange"  preload="metadata" playsinline src="tracks/orange.mp3"></audio>
   <audio id="aud_autumn"  preload="metadata" playsinline src="tracks/autumn.mp3"></audio>
@@ -2317,7 +2352,8 @@ drawPreview();
       storm:   { on:'⛈️', el:'aud_storm'   },
     };
     const DOCK = document.getElementById('audioDock2');
-    const STOP = document.getElementById('adStop');
+    // Reference to the expand/collapse toggle button
+    const TOGGLE = document.getElementById('adToggle');
     const SEED = '🌱';
     const ACTIVE = new Set();
 
@@ -2337,14 +2373,11 @@ drawPreview();
           }
         } catch(_){}
       });
-      document.removeEventListener('pointerdown', unlock, true);
-
-      // Start storm automatically when the audio context is unlocked
+      // Once unlocked, automatically start the storm track (autoplay)
       try {
         toggleTrack('storm');
-      } catch(_){
-        /* In case toggleTrack is not yet defined, ignore */
-      }
+      } catch(_){}
+      document.removeEventListener('pointerdown', unlock, true);
     }
     document.addEventListener('pointerdown', unlock, true);
 
@@ -2395,24 +2428,29 @@ drawPreview();
       ACTIVE.clear();
     }
 
-    // Choose a random track and toggle it (used when the stop/min-max button is pressed)
-    function playRandomTrack(){
-      const names = Object.keys(TRACKS);
-      if(names.length === 0) return;
-      const randName = names[Math.floor(Math.random() * names.length)];
-      toggleTrack(randName);
-    }
-
     // Bind buttons
+    // Bind track buttons
     if(DOCK){
       DOCK.querySelectorAll('.ad-btn').forEach(btn=>{
         btn.addEventListener('click', ()=> toggleTrack(btn.getAttribute('data-track')), {passive:true});
       });
     }
-    if(STOP){
-      // Instead of stopping all, play a random track on click
-      STOP.removeEventListener('click', stopAll);
-      STOP.addEventListener('click', playRandomTrack, {passive:true});
+    // Bind expand/collapse toggle button
+    if(TOGGLE && DOCK){
+      TOGGLE.addEventListener('click', ()=>{
+        DOCK.classList.toggle('collapsed');
+        // When collapsing, hide all volume sliders
+        if(DOCK.classList.contains('collapsed')){
+          DOCK.querySelectorAll('.ad-vol').forEach(v=> v.classList.remove('visible'));
+        } else {
+          // When expanding and storm is active, show and reposition its slider
+          if(ACTIVE.has('storm')){
+            const b = btnSel('storm');
+            const v = volSel('storm');
+            if(b && v){ positionSlider(b, v); v.classList.add('visible'); }
+          }
+        }
+      }, {passive:true});
     }
 
     // Volume sliders with persistence
@@ -2429,13 +2467,9 @@ drawPreview();
         } catch(_){
           aud.volume = parseFloat(rng.value);
         }
-        // Update volume on both `input` and `change` events. Some browsers
-        // (particularly iOS Safari) only finalize value changes on change. To ensure the
-        // slider visually reflects the current audio volume, update the audio element
-        // whenever the user moves or releases the thumb.
+        // Update volume on both `input` and `change` events to support iOS Safari and desktop
         const onVolChange = ()=>{
           const v = parseFloat(rng.value);
-          // Clamp just in case the value falls outside [0,1]
           const vol = Math.max(0, Math.min(1, v));
           aud.volume = vol;
           try { localStorage.setItem('advol_'+name, vol); } catch(_){}
