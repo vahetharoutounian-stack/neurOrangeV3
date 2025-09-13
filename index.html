@@ -2297,9 +2297,9 @@ drawPreview();
 </script>
 
   <!-- Audio player logic: toggles tracks, manages volume sliders and stop button. Wrap in an IIFE to avoid polluting global scope. -->
-  <script>
+    <script>
   (function(){
-    // Define track metadata: mapping to play icon and audio element ID
+    // Track map and DOM helpers
     const TRACKS = {
       sparkle: { on:'✨', el:'aud_sparkle' },
       orange:  { on:'🍊', el:'aud_orange'  },
@@ -2308,61 +2308,54 @@ drawPreview();
     };
     const DOCK = document.getElementById('audioDock2');
     const STOP = document.getElementById('adStop');
-    // Helpers to select DOM elements
-    const btnSel = name => DOCK ? DOCK.querySelector(`.ad-btn[data-track="${name}"]`) : null;
-    const volSel = name => DOCK ? DOCK.querySelector(`.ad-vol[data-for="${name}"]`) : null;
-    const audSel = name => document.getElementById(TRACKS[name].el);
     const SEED = '🌱';
     const ACTIVE = new Set();
-    // Unlock audio context after first pointer interaction (iOS Safari requires a user gesture)
-    const unlock = () => {
-      Object.keys(TRACKS).forEach(name => {
+
+    const btnSel = (name)=> DOCK ? DOCK.querySelector(`.ad-btn[data-track="${name}"]`) : null;
+    const volSel = (name)=> DOCK ? DOCK.querySelector(`.ad-vol[data-for="${name}"]`) : null;
+    const audSel = (name)=> document.getElementById(TRACKS[name].el);
+
+    // iOS audio unlock on first user gesture
+    function unlock(){
+      Object.keys(TRACKS).forEach(name=>{
         const a = audSel(name);
         if(!a) return;
         try {
           const p = a.play();
-          if(p !== undefined){ p.then(() => { a.pause(); a.currentTime = 0; }).catch(() => {}); }
-        } catch(_){ }
+          if (p && typeof p.then === 'function') {
+            p.then(()=>{ a.pause(); a.currentTime = 0; }).catch(()=>{});
+          }
+        } catch(_){}
       });
       document.removeEventListener('pointerdown', unlock, true);
-    };
+    }
     document.addEventListener('pointerdown', unlock, true);
-    // Position the volume slider above its button. Clamp horizontal offset to keep on screen.
+
+    // Position vertical slider above its button (kept minimal; works across orientations)
     function positionSlider(btn, vol){
-      if(!btn || !vol) return;
+      if(!btn || !vol || !DOCK) return;
       const dockRect = DOCK.getBoundingClientRect();
       const btnRect  = btn.getBoundingClientRect();
       const left = (btnRect.left + btnRect.width/2) - (dockRect.left + 22);
       const offset = Math.max(-6, Math.min(left - 22, 220));
       vol.style.left = offset + 'px';
     }
-    // Toggle playback for a given track
+
+    // Toggle a single track; ALLOW LAYERING (no forced stop of others)
     function toggleTrack(name){
       const btn = btnSel(name);
       const vol = volSel(name);
       const aud = audSel(name);
       if(!btn || !vol || !aud) return;
-      if(ACTIVE.has(name)){
-        // Stop this track
+
+      if (ACTIVE.has(name)){
         try { aud.pause(); aud.currentTime = 0; } catch(_){}
         ACTIVE.delete(name);
         btn.textContent = SEED;
         btn.classList.remove('active');
         vol.classList.remove('visible');
       } else {
-        // Stop other tracks and hide their sliders
-        Object.keys(TRACKS).forEach(other => {
-          if(other !== name && ACTIVE.has(other)){
-            const audX = audSel(other);
-            const btnX = btnSel(other);
-            const volX = volSel(other);
-            try { audX.pause(); audX.currentTime = 0; } catch(_){}
-            ACTIVE.delete(other);
-            if(btnX){ btnX.textContent = SEED; btnX.classList.remove('active'); }
-            if(volX){ volX.classList.remove('visible'); }
-          }
-        });
-        // Start the selected track
+        // Attempt to play; errors are swallowed on iOS until unlocked
         try { aud.play().catch(()=>{}); } catch(_){}
         ACTIVE.add(name);
         btn.textContent = TRACKS[name].on;
@@ -2371,52 +2364,49 @@ drawPreview();
         vol.classList.add('visible');
       }
     }
-    // Stop all tracks and reset UI
+
+    // Stop ALL tracks
     function stopAll(){
-      Object.keys(TRACKS).forEach(name => {
+      Object.keys(TRACKS).forEach(name=>{
         const aud = audSel(name);
         const btn = btnSel(name);
         const vol = volSel(name);
-        try { aud.pause(); aud.currentTime = 0; } catch(_){}
-        ACTIVE.delete(name);
+        try { if(aud){ aud.pause(); aud.currentTime = 0; } } catch(_){}
         if(btn){ btn.textContent = SEED; btn.classList.remove('active'); }
         if(vol){ vol.classList.remove('visible'); }
       });
+      ACTIVE.clear();
     }
-    // Bind click handlers on track buttons
+
+    // Bind buttons
     if(DOCK){
-      DOCK.querySelectorAll('.ad-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-          const name = btn.getAttribute('data-track');
-          toggleTrack(name);
-        });
+      DOCK.querySelectorAll('.ad-btn').forEach(btn=>{
+        btn.addEventListener('click', ()=> toggleTrack(btn.getAttribute('data-track')), {passive:true});
       });
     }
-    // Bind stop button
-    if(STOP){ STOP.addEventListener('click', stopAll); }
-    // Setup volume sliders: set initial volumes and persist changes
+    if(STOP){ STOP.addEventListener('click', stopAll, {passive:true}); }
+
+    // Volume sliders with persistence
     if(DOCK){
-      DOCK.querySelectorAll('.ad-vol').forEach(wrap => {
+      DOCK.querySelectorAll('.ad-vol').forEach(wrap=>{
         const name = wrap.getAttribute('data-for');
         const aud  = audSel(name);
         const rng  = wrap.querySelector('input[type="range"]');
         if(!aud || !rng) return;
-        // Initialize volume from saved value or default
         try {
           const saved = localStorage.getItem('advol_'+name);
-          if(saved !== null){
-            aud.volume = rng.value = parseFloat(saved);
-          } else {
-            aud.volume = parseFloat(rng.value);
-          }
-        } catch(_){ aud.volume = parseFloat(rng.value); }
-        rng.addEventListener('input', () => {
+          aud.volume = saved !== null ? parseFloat(saved) : parseFloat(rng.value);
+          rng.value = String(aud.volume);
+        } catch(_){
+          aud.volume = parseFloat(rng.value);
+        }
+        rng.addEventListener('input', ()=>{
           const v = parseFloat(rng.value);
           aud.volume = v;
           try { localStorage.setItem('advol_'+name, v); } catch(_){}
-        });
-        // Reposition slider on resize/orientation change
-        window.addEventListener('resize', () => {
+        }, {passive:true});
+        // Keep slider positioned on rotation/resize if visible
+        window.addEventListener('resize', ()=>{
           if(wrap.classList.contains('visible')){
             const btn = btnSel(name);
             positionSlider(btn, wrap);
