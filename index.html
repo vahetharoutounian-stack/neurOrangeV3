@@ -510,41 +510,54 @@
       border:0;
     }
   
-/* Collapse/Expand button (🟠) */
+/* Collapsed state hides sprouts and sliders */
+#audioDock2.collapsed .ad-wrap{ display:none; }
+#audioDock2.collapsed .ad-vol{ display:none !important; }
+
+/* Toggle button: Bergamot with Nickelodeon bubble */
 #adToggle.ad-toggle{
   width:42px;height:42px;min-width:42px;border-radius:50%;
   display:inline-flex;align-items:center;justify-content:center;
   font-size:22px;line-height:1;border:0;cursor:pointer;
   background: var(--heart); /* Bergamot */
   color:#111;
-  box-shadow: 0 0 0 6px rgba(255,102,0,.35), 0 2px 6px rgba(0,0,0,.25); /* Nickelodeon bubble + shadow */
+  box-shadow: 0 0 0 6px rgba(255,102,0,.35), 0 2px 6px rgba(0,0,0,.25);
   transition: transform .06s ease, box-shadow .2s ease;
   margin-right:6px;
 }
-#audioDock2.collapsed .ad-wrap{ display:none; }
-#audioDock2.collapsed .ad-vol{ display:none !important; }
-
-/* Slider alignment improvements */
 #adToggle.ad-toggle:active{ transform: translateY(1px); }
 
-#adToggle + #adStop.ad-stop{ margin-left: 2px; }
+/* Pulse the toggle when expanded */
+@keyframes bergamotPulse{
+  0%,100%{ box-shadow: 0 0 0 6px rgba(255,166,77,.45), 0 8px 22px rgba(0,0,0,.35); transform: translateY(0); }
+  50%    { box-shadow: 0 0 0 10px rgba(255,166,77,.22), 0 8px 22px rgba(0,0,0,.35); transform: translateY(-1px); }
+}
+#audioDock2:not(.collapsed) #adToggle{ animation: bergamotPulse 1.6s ease-in-out infinite; }
 
-/* Center the vertical track under the (18px) thumb in a 30px-wide slider */
+/* Center slider popover */
+#adToggle ~ .ad-wrap .ad-vol{ left:50%; transform: translateX(-50%); }
+
+/* Make vertical sliders actually move & align on iOS/Firefox */
 #adToggle ~ .ad-wrap .ad-vol input[type="range"]{
-  -webkit-appearance: none;
-  appearance: none;
-  width:30px; height:110px; margin:0 auto; display:block; background:transparent;
+  writing-mode: bt-lr;
+  -webkit-appearance: slider-vertical;
+  width:30px; height:130px;
+  padding:0; margin:0 auto; display:block; background:transparent;
+  touch-action: none;
 }
 #adToggle ~ .ad-wrap .ad-vol input[type="range"]::-webkit-slider-runnable-track{
-  width:6px; height:110px; background:#dddddd; border-radius:999px; border:0; margin-left:12px;
+  width:6px; height:130px; background:#dddddd; border-radius:999px; border:0;
+  margin-left:12px; /* centers track under 18px thumb in a 30px control */
 }
 #adToggle ~ .ad-wrap .ad-vol input[type="range"]::-webkit-slider-thumb{
-  -webkit-appearance:none; width:18px; height:18px; border-radius:50%;
-  background:#FF6600; border:1px solid rgba(0,0,0,.35); box-shadow:0 1px 4px rgba(0,0,0,.35);
+  -webkit-appearance: none;
+  width:18px; height:18px; border-radius:50%;
+  background:#FF6600; border:1px solid rgba(0,0,0,.35);
+  box-shadow:0 1px 4px rgba(0,0,0,.35);
 }
 /* Firefox */
 #adToggle ~ .ad-wrap .ad-vol input[type="range"]::-moz-range-track{
-  width:6px; background:#dddddd; border-radius:999px; border:0;
+  width:6px; height:130px; background:#dddddd; border-radius:999px; border:0;
 }
 #adToggle ~ .ad-wrap .ad-vol input[type="range"]::-moz-range-thumb{
   width:18px; height:18px; border-radius:50%;
@@ -599,10 +612,9 @@
 </div>
 
 <!-- Persistent audio player (Nickelodeon orange) anchored bottom-left. Each track toggles between a sprout emoji and its playing icon. A vertical volume slider appears while active. -->
-<div id="audioDock2" role="group" aria-label="Audio Player">
+<div id="audioDock2" role="group" aria-label="Audio Player" class="collapsed">
   <!-- Collapse/Expand button -->
   <button class="ad-toggle" id="adToggle" title="Collapse/Expand">🟠</button>
-
   <!-- Stop button (orange square) -->
   <button class="ad-stop" id="adStop" title="Stop all">🟧</button>
   <!-- Track 1: Sparkle ✨ -->
@@ -2348,138 +2360,153 @@ drawPreview();
     sparkle: { on:'✨', el:'aud_sparkle', group:'melodic' },
     orange:  { on:'🍊', el:'aud_orange',  group:'melodic' },
     autumn:  { on:'🍂', el:'aud_autumn',  group:'melodic' },
-    storm:   { on:'⛈️', el:'aud_storm',   group:'ambient' },
+    storm:   { on:'⛈️', el:'aud_storm',   group:'ambient' }, // can layer
   };
   const DOCK = document.getElementById('audioDock2');
-  const STOP = document.getElementById('adStop');
-  const TOG  = document.getElementById('adToggle');
+  const PLAY = document.getElementById('adStop');   // main orange play/pause
+  const TOG  = document.getElementById('adToggle'); // collapse/expand
   const SEED = '🌱';
   const ACTIVE = new Set();
-
   const btnSel = (name)=> DOCK ? DOCK.querySelector(`.ad-btn[data-track="${name}"]`) : null;
   const volSel = (name)=> DOCK ? DOCK.querySelector(`.ad-vol[data-for="${name}"]`) : null;
   const audSel = (name)=> document.getElementById(TRACKS[name].el);
 
-  // Update the stop button: show pause when anything is active, stop when nothing
-  function anyActive(){ return ACTIVE.size > 0; }
-  function updateStopGlyph(){
-    STOP.textContent = anyActive() ? '🟧⏸' : '🟧⏹';
-  }
-
-  // iOS unlock & attempt auto-start storm
+  // iOS unlock (no autoplay)
   function unlock(){
     Object.keys(TRACKS).forEach(n=>{
       const a = audSel(n);
       if(!a) return;
       try{ a.play().then(()=>{a.pause(); a.currentTime=0;}).catch(()=>{});}catch(_){}
     });
-    // Try to start storm after unlock if not already playing
-    if(!ACTIVE.has('storm')){
-      const s = audSel('storm');
-      if(s){ s.loop = true; s.play().then(()=>{ setActiveUI('storm', true); updateStopGlyph(); }).catch(()=>{}); }
-    }
     document.removeEventListener('pointerdown', unlock, true);
   }
   document.addEventListener('pointerdown', unlock, true);
+
+  function anyActive(){ return ACTIVE.size > 0; }
+  function anyPlaying(){
+    let on = false;
+    ACTIVE.forEach(n=>{ const a = audSel(n); if(a && !a.paused) on = true; });
+    return on;
+  }
+  function setPlayGlyph(){
+    if(!PLAY) return;
+    PLAY.textContent = anyPlaying() ? '🟠⏸' : '🟠▶';
+  }
 
   function setActiveUI(name, isActive){
     const btn=btnSel(name), vol=volSel(name);
     if(isActive){
       ACTIVE.add(name);
-      if(btn){btn.textContent=TRACKS[name].on; btn.classList.add('active');}
-      if(vol){vol.classList.add('visible');}
+      if(btn){ btn.textContent=TRACKS[name].on; btn.classList.add('active'); }
+      if(vol){ vol.classList.add('visible'); }
     }else{
       ACTIVE.delete(name);
-      if(btn){btn.textContent=SEED; btn.classList.remove('active');}
-      if(vol){vol.classList.remove('visible');}
+      if(btn){ btn.textContent=SEED; btn.classList.remove('active'); }
+      if(vol){ vol.classList.remove('visible'); }
     }
-    updateStopGlyph();
+    setPlayGlyph();
   }
 
   function startTrack(name){
-    // If starting a melodic track, stop other melodic tracks but leave storm alone
     if(TRACKS[name].group === 'melodic'){
       Object.keys(TRACKS).forEach(n=>{
         if(n !== name && TRACKS[n].group === 'melodic' && ACTIVE.has(n)) stopTrack(n);
       });
     }
     const a = audSel(name);
-    const vol = volSel(name)?.querySelector('input[type="range"]');
+    const rng = volSel(name)?.querySelector('input[type="range"]');
     if(a){
       a.loop = true;
-      if(vol) a.volume = parseFloat(vol.value || '0.6');
-      a.play().then(()=>{
-        setActiveUI(name, true);
-      }).catch(()=>{
-        // Will try again after unlock
-      });
+      if(rng) a.volume = parseFloat(rng.value || '0.6');
+      a.play().then(()=> setActiveUI(name, true)).catch(()=>{});
     }
   }
-
   function stopTrack(name){
     const a = audSel(name);
-    if(a){ try{ a.pause(); a.currentTime = 0; }catch(_){ } }
+    if(a){ try{ a.pause(); }catch(_){ } }
     setActiveUI(name, false);
   }
-
   function toggleTrack(name){
     if(ACTIVE.has(name)) stopTrack(name); else startTrack(name);
   }
 
-  function stopAll(){
-    Object.keys(TRACKS).forEach(stopTrack);
+  function pauseAll(){
+    Object.keys(TRACKS).forEach(n=>{
+      const a = audSel(n);
+      if(a && !a.paused){ try{ a.pause(); }catch(_){ } }
+    });
+    setPlayGlyph();
+  }
+  function playAll(){
+    ACTIVE.forEach(n=>{ const a = audSel(n); if(a){ a.play().catch(()=>{}); } });
+    setPlayGlyph();
   }
 
-  // Bind track buttons
+  // Track buttons
   if(DOCK){
     DOCK.querySelectorAll('.ad-btn').forEach(btn=>{
-      btn.addEventListener('click', ()=> toggleTrack(btn.getAttribute('data-track')), {passive:true});
+      btn.addEventListener('click', ()=>{
+        if(DOCK.classList.contains('collapsed')) DOCK.classList.remove('collapsed');
+        toggleTrack(btn.getAttribute('data-track'));
+      }, {passive:true});
     });
   }
 
-  // Bind stop button
-  if(STOP){ STOP.addEventListener('click', stopAll, {passive:true}); }
-
-  // Bind collapse/expand
-  if(TOG){
-    TOG.addEventListener('click', ()=>{
-      DOCK.classList.toggle('collapsed');
+  // Main orange play/pause (🟠▶ / 🟠⏸)
+  if(PLAY){
+    // Initialize glyph
+    setPlayGlyph();
+    PLAY.addEventListener('click', ()=>{
+      if(anyPlaying()){ pauseAll(); }
+      else{
+        if(ACTIVE.size === 0){
+          // start with Storm if nothing active yet
+          startTrack('storm');
+        } else {
+          playAll();
+        }
+      }
+      setPlayGlyph();
     }, {passive:true});
   }
 
-  // Volumes
+  // Collapse/expand toggle; when expanding, show Storm's slider (no autoplay)
+  if(TOG){
+    TOG.addEventListener('click', ()=>{
+      const wasCollapsed = DOCK.classList.contains('collapsed');
+      DOCK.classList.toggle('collapsed');
+      if(wasCollapsed){
+        const v = volSel('storm');
+        if(v) v.classList.add('visible'); // open slider without playing
+      }
+    }, {passive:true});
+  }
+
+  // Volume sliders update volumes + persist
   if(DOCK){
     DOCK.querySelectorAll('.ad-vol').forEach(wrap=>{
       const name = wrap.getAttribute('data-for');
       const a = audSel(name);
       const rng = wrap.querySelector('input[type="range"]');
       if(!rng) return;
-      // init from localStorage if present
       try{
         const saved = localStorage.getItem('advol_'+name);
         const v = saved !== null ? parseFloat(saved) : parseFloat(rng.value || '0.6');
         rng.value = String(v);
         if(a) a.volume = v;
       }catch(_){}
-      rng.addEventListener('input', ()=>{
+      const onMove = ()=>{
         const v = parseFloat(rng.value || '0.6');
         if(a) a.volume = v;
         try{ localStorage.setItem('advol_'+name, v); }catch(_){}
-      }, {passive:true});
+      };
+      rng.addEventListener('input', onMove, {passive:true});
+      rng.addEventListener('change', onMove, {passive:true});
     });
   }
 
-  // Try to autoplay storm at load (will be allowed on desktop; iOS retries after unlock)
-  (function autoStorm(){
-    const s = audSel('storm');
-    if(s){
-      s.loop = true;
-      s.play().then(()=>{ setActiveUI('storm', true); }).catch(()=>{});
-    }
-  })();
-
-  // Initialize stop glyph on load
-  updateStopGlyph();
+  // Set initial glyph explicitly
+  setPlayGlyph();
 })();
 </script>
 
