@@ -466,6 +466,9 @@
       border:1px solid rgba(255,255,255,.2);
       box-shadow:0 10px 24px rgba(0,0,0,.45);
       display:none;
+      /* Center the slider horizontally above the button */
+      left:50%;
+      transform:translateX(-50%);
     }
     .ad-vol.visible{ display:block; }
     .ad-vol label{
@@ -528,12 +531,32 @@
       line-height:1;
       border:0;
       cursor:pointer;
-      /* Use saffron fill for the toggle button */
-      background:#F4C430;
+      /* Use Bergamot fill for the toggle button */
+      background:#FFA64D;
       box-shadow:0 2px 6px rgba(0,0,0,.25);
       transition:transform .06s ease, box-shadow .2s ease;
     }
     .ad-toggle:active{ transform:translateY(1px); }
+
+    /* Play/Pause main button */
+    .ad-play{
+      width:42px;
+      height:42px;
+      min-width:42px;
+      border-radius:50%;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      font-size:22px;
+      line-height:1;
+      border:0;
+      cursor:pointer;
+      /* Jinn Flame Orange fill */
+      background:#F88E10;
+      box-shadow:0 2px 6px rgba(0,0,0,.25);
+      transition:transform .06s ease, box-shadow .2s ease;
+    }
+    .ad-play:active{ transform:translateY(1px); }
 
     /* Pulse animation when expanded */
     @keyframes pulseToggle{
@@ -605,6 +628,8 @@
 <div id="audioDock2" role="group" aria-label="Audio Player" class="collapsed">
   <!-- Expand/Collapse button (min/max). Uses a saffron circle with an orange dot. -->
   <button class="ad-toggle" id="adToggle" title="Expand or collapse the player">🟠</button>
+  <!-- Play/Pause button. Filled with Jinn Flame Orange -->
+  <button class="ad-play" id="adPlay" title="Play or pause">▶</button>
   <!-- Track 1: Sparkle ✨ -->
   <div class="ad-wrap">
     <button class="ad-btn" data-track="sparkle" title="Sparkle ✨">🌱</button>
@@ -618,7 +643,8 @@
     <button class="ad-btn" data-track="orange" title="Orange 🍊">🌱</button>
     <div class="ad-vol" data-for="orange">
       <label>🍊</label>
-      <input type="range" min="0" max="1" step="0.01" value="0.6"/>
+      <!-- Start muted at zero volume -->
+      <input type="range" min="0" max="1" step="0.01" value="0"/>
     </div>
   </div>
   <!-- Track 3: Autumn 🍂 -->
@@ -626,7 +652,8 @@
     <button class="ad-btn" data-track="autumn" title="Autumn 🍂">🌱</button>
     <div class="ad-vol" data-for="autumn">
       <label>🍂</label>
-      <input type="range" min="0" max="1" step="0.01" value="0.6"/>
+      <!-- Start muted at zero volume -->
+      <input type="range" min="0" max="1" step="0.01" value="0"/>
     </div>
   </div>
   <!-- Track 4: Storm ⛈️ -->
@@ -634,7 +661,8 @@
     <button class="ad-btn" data-track="storm" title="Storm ⛈️">🌱</button>
     <div class="ad-vol" data-for="storm">
       <label>⛈️</label>
-      <input type="range" min="0" max="1" step="0.01" value="0.6"/>
+      <!-- Start muted at zero volume -->
+      <input type="range" min="0" max="1" step="0.01" value="0"/>
     </div>
   </div>
   <!-- Hidden audio elements (provide your own sources) -->
@@ -2354,6 +2382,7 @@ drawPreview();
     const DOCK = document.getElementById('audioDock2');
     // Reference to the expand/collapse toggle button
     const TOGGLE = document.getElementById('adToggle');
+    const PLAY   = document.getElementById('adPlay');
     const SEED = '🌱';
     const ACTIVE = new Set();
 
@@ -2373,9 +2402,9 @@ drawPreview();
           }
         } catch(_){}
       });
-      // Once unlocked, automatically start the storm track (autoplay)
+      // Once unlocked, automatically start the sparkle track (autoplay)
       try {
-        toggleTrack('storm');
+        toggleTrack('sparkle');
       } catch(_){}
       document.removeEventListener('pointerdown', unlock, true);
     }
@@ -2383,12 +2412,12 @@ drawPreview();
 
     // Position vertical slider above its button (kept minimal; works across orientations)
     function positionSlider(btn, vol){
-      if(!btn || !vol || !DOCK) return;
-      const dockRect = DOCK.getBoundingClientRect();
-      const btnRect  = btn.getBoundingClientRect();
-      const left = (btnRect.left + btnRect.width/2) - (dockRect.left + 22);
-      const offset = Math.max(-6, Math.min(left - 22, 220));
-      vol.style.left = offset + 'px';
+      if(!btn || !vol) return;
+      // Center the slider horizontally above its button. With CSS left:50% and
+      // transform:translateX(-50%), this placement ensures the popover is aligned
+      // regardless of dock width or orientation. No additional calculations needed.
+      vol.style.left = '50%';
+      vol.style.transform = 'translateX(-50%)';
     }
 
     // Toggle a single track; ALLOW LAYERING (no forced stop of others)
@@ -2413,6 +2442,23 @@ drawPreview();
         positionSlider(btn, vol);
         vol.classList.add('visible');
       }
+      // Update play/pause icon whenever a track is toggled
+      updatePlayIcon();
+    }
+
+    // Determine if any active track is currently playing
+    function anyPlaying(){
+      for (const name of ACTIVE){
+        const a = audSel(name);
+        if(a && !a.paused) return true;
+      }
+      return false;
+    }
+
+    // Update the play/pause button icon based on playing state
+    function updatePlayIcon(){
+      if(!PLAY) return;
+      PLAY.textContent = anyPlaying() ? '⏸' : '▶';
     }
 
     // Stop ALL tracks
@@ -2441,15 +2487,41 @@ drawPreview();
         DOCK.classList.toggle('collapsed');
         // When collapsing, hide all volume sliders
         if(DOCK.classList.contains('collapsed')){
-          DOCK.querySelectorAll('.ad-vol').forEach(v=> v.classList.remove('visible'));
+          // When collapsing, hide all volume sliders
+          DOCK.querySelectorAll('.ad-vol').forEach(v => v.classList.remove('visible'));
         } else {
-          // When expanding and storm is active, show and reposition its slider
-          if(ACTIVE.has('storm')){
-            const b = btnSel('storm');
-            const v = volSel('storm');
+          // When expanding, reveal sliders for all currently active tracks and re-center them
+          ACTIVE.forEach(name => {
+            const b = btnSel(name);
+            const v = volSel(name);
             if(b && v){ positionSlider(b, v); v.classList.add('visible'); }
+          });
+        }
+      }, {passive:true});
+    }
+
+    // Bind play/pause control
+    if(PLAY){
+      PLAY.addEventListener('click', ()=>{
+        if(anyPlaying()){
+          // Pause all currently active tracks
+          ACTIVE.forEach(name=>{
+            const a = audSel(name);
+            if(a) a.pause();
+          });
+        } else {
+          if(ACTIVE.size){
+            // Resume all active tracks
+            ACTIVE.forEach(name=>{
+              const a = audSel(name);
+              if(a) try{ a.play().catch(()=>{}); }catch(_){}
+            });
+          } else {
+            // If no active tracks, start sparkle by default
+            toggleTrack('sparkle');
           }
         }
+        updatePlayIcon();
       }, {passive:true});
     }
 
@@ -2462,10 +2534,14 @@ drawPreview();
         if(!aud || !rng) return;
         try {
           const saved = localStorage.getItem('advol_'+name);
-          aud.volume = saved !== null ? parseFloat(saved) : parseFloat(rng.value);
+          // Use default volume 0 for all tracks except sparkle, which uses its slider's value
+          const defaultVol = name === 'sparkle' ? parseFloat(rng.value) : 0;
+          aud.volume = saved !== null ? parseFloat(saved) : defaultVol;
           rng.value = String(aud.volume);
         } catch(_){
-          aud.volume = parseFloat(rng.value);
+          // Fallback to default volumes
+          aud.volume = (name === 'sparkle' ? parseFloat(rng.value) : 0);
+          rng.value = String(aud.volume);
         }
         // Update volume on both `input` and `change` events to support iOS Safari and desktop
         const onVolChange = ()=>{
@@ -2485,6 +2561,9 @@ drawPreview();
         });
       });
     }
+
+    // Initialize the play/pause icon state on load
+    updatePlayIcon();
   })();
   </script>
 
