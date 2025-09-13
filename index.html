@@ -461,7 +461,9 @@
       border:1px solid rgba(255,255,255,.2);
       box-shadow:0 10px 24px rgba(0,0,0,.45);
       display:none;
-    }
+    
+      left:50%; transform:translateX(-50%);
+}
     .ad-vol.visible{ display:block; }
     .ad-vol label{
       color:#ffffff;
@@ -2296,126 +2298,106 @@ drawPreview();
 })();
 </script>
 
-  <!-- Audio player logic: toggles tracks, manages volume sliders and stop button. Wrap in an IIFE to avoid polluting global scope. -->
-    <script>
-  (function(){
-    // Track map and DOM helpers
-    const TRACKS = {
-      sparkle: { on:'✨', el:'aud_sparkle' },
-      orange:  { on:'🍊', el:'aud_orange'  },
-      autumn:  { on:'🍂', el:'aud_autumn'  },
-      storm:   { on:'⛈️', el:'aud_storm'   },
-    };
-    const DOCK = document.getElementById('audioDock2');
-    const STOP = document.getElementById('adStop');
-    const SEED = '🌱';
-    const ACTIVE = new Set();
+  
+<!-- Audio player logic: toggles tracks, manages volume sliders and stop button. Wrap in an IIFE to avoid polluting global scope. -->
+<script>
+(function(){
+  const TRACKS = {
+    sparkle: { on:'✨', el:'aud_sparkle' },
+    orange:  { on:'🍊', el:'aud_orange'  },
+    autumn:  { on:'🍂', el:'aud_autumn'  },
+    storm:   { on:'⛈️', el:'aud_storm'   },
+  };
+  const DOCK = document.getElementById('audioDock2');
+  const STOP = document.getElementById('adStop');
+  const SEED = '🌱';
+  const ACTIVE = new Set();
 
-    const btnSel = (name)=> DOCK ? DOCK.querySelector(`.ad-btn[data-track="${name}"]`) : null;
-    const volSel = (name)=> DOCK ? DOCK.querySelector(`.ad-vol[data-for="${name}"]`) : null;
-    const audSel = (name)=> document.getElementById(TRACKS[name].el);
+  const btnSel = (name)=> DOCK ? DOCK.querySelector(`.ad-btn[data-track="${name}"]`) : null;
+  const volSel = (name)=> DOCK ? DOCK.querySelector(`.ad-vol[data-for="${name}"]`) : null;
+  const audSel = (name)=> document.getElementById(TRACKS[name].el);
 
-    // iOS audio unlock on first user gesture
-    function unlock(){
-      Object.keys(TRACKS).forEach(name=>{
-        const a = audSel(name);
-        if(!a) return;
-        try {
-          const p = a.play();
-          if (p && typeof p.then === 'function') {
-            p.then(()=>{ a.pause(); a.currentTime = 0; }).catch(()=>{});
-          }
-        } catch(_){}
-      });
-      document.removeEventListener('pointerdown', unlock, true);
-    }
-    document.addEventListener('pointerdown', unlock, true);
-
-    // Position vertical slider above its button (kept minimal; works across orientations)
-    function positionSlider(btn, vol){
-      if(!btn || !vol || !DOCK) return;
-      const dockRect = DOCK.getBoundingClientRect();
-      const btnRect  = btn.getBoundingClientRect();
-      const left = (btnRect.left + btnRect.width/2) - (dockRect.left + 22);
-      const offset = Math.max(-6, Math.min(left - 22, 220));
-      vol.style.left = offset + 'px';
-    }
-
-    // Toggle a single track; ALLOW LAYERING (no forced stop of others)
-    function toggleTrack(name){
-      const btn = btnSel(name);
-      const vol = volSel(name);
-      const aud = audSel(name);
-      if(!btn || !vol || !aud) return;
-
-      if (ACTIVE.has(name)){
-        try { aud.pause(); aud.currentTime = 0; } catch(_){}
-        ACTIVE.delete(name);
-        btn.textContent = SEED;
-        btn.classList.remove('active');
-        vol.classList.remove('visible');
-      } else {
-        // Attempt to play; errors are swallowed on iOS until unlocked
-        try { aud.play().catch(()=>{}); } catch(_){}
-        ACTIVE.add(name);
-        btn.textContent = TRACKS[name].on;
-        btn.classList.add('active');
-        positionSlider(btn, vol);
-        vol.classList.add('visible');
+  // --- Autoplay Storm on enter ---
+  function tryAutoStartStorm(){
+    if(ACTIVE.has('storm')) return;
+    const a = audSel('storm');
+    if(a){
+      a.loop = true;
+      const attempt = a.play();
+      if(attempt && typeof attempt.then === 'function'){
+        attempt.then(()=> setActiveUI('storm', true)).catch(()=>{
+          // Will retry after unlock
+        });
       }
     }
+  }
 
-    // Stop ALL tracks
-    function stopAll(){
-      Object.keys(TRACKS).forEach(name=>{
-        const aud = audSel(name);
-        const btn = btnSel(name);
-        const vol = volSel(name);
-        try { if(aud){ aud.pause(); aud.currentTime = 0; } } catch(_){}
-        if(btn){ btn.textContent = SEED; btn.classList.remove('active'); }
-        if(vol){ vol.classList.remove('visible'); }
-      });
-      ACTIVE.clear();
-    }
+  // Unlock audio on first user tap (iOS requirement)
+  function unlock(){
+    Object.keys(TRACKS).forEach(name=>{
+      const a = audSel(name);
+      if(!a) return;
+      try{ a.play().then(()=>{a.pause(); a.currentTime=0;}).catch(()=>{});}catch(_){}
+    });
+    tryAutoStartStorm();
+    document.removeEventListener('pointerdown', unlock, true);
+  }
+  document.addEventListener('pointerdown', unlock, true);
 
-    // Bind buttons
-    if(DOCK){
-      DOCK.querySelectorAll('.ad-btn').forEach(btn=>{
-        btn.addEventListener('click', ()=> toggleTrack(btn.getAttribute('data-track')), {passive:true});
-      });
+  function setActiveUI(name,isActive){
+    const btn=btnSel(name), vol=volSel(name);
+    if(isActive){
+      ACTIVE.add(name);
+      if(btn){btn.textContent=TRACKS[name].on; btn.classList.add('active');}
+      if(vol){vol.classList.add('visible');}
+    } else {
+      ACTIVE.delete(name);
+      if(btn){btn.textContent=SEED; btn.classList.remove('active');}
+      if(vol){vol.classList.remove('visible');}
     }
-    if(STOP){ STOP.addEventListener('click', stopAll, {passive:true}); }
+  }
 
-    // Volume sliders with persistence
-    if(DOCK){
-      DOCK.querySelectorAll('.ad-vol').forEach(wrap=>{
-        const name = wrap.getAttribute('data-for');
-        const aud  = audSel(name);
-        const rng  = wrap.querySelector('input[type="range"]');
-        if(!aud || !rng) return;
-        try {
-          const saved = localStorage.getItem('advol_'+name);
-          aud.volume = saved !== null ? parseFloat(saved) : parseFloat(rng.value);
-          rng.value = String(aud.volume);
-        } catch(_){
-          aud.volume = parseFloat(rng.value);
-        }
-        rng.addEventListener('input', ()=>{
-          const v = parseFloat(rng.value);
-          aud.volume = v;
-          try { localStorage.setItem('advol_'+name, v); } catch(_){}
-        }, {passive:true});
-        // Keep slider positioned on rotation/resize if visible
-        window.addEventListener('resize', ()=>{
-          if(wrap.classList.contains('visible')){
-            const btn = btnSel(name);
-            positionSlider(btn, wrap);
-          }
-        });
-      });
+  function startTrack(name){
+    const a=audSel(name), vol=volSel(name)?.querySelector('input[type=\"range\"]');
+    if(a){
+      a.loop=true;
+      if(vol) a.volume=parseFloat(vol.value);
+      a.play().catch(()=>{});
+      setActiveUI(name,true);
     }
-  })();
-  </script>
+  }
+  function stopTrack(name){
+    const a=audSel(name);
+    if(a){try{a.pause(); a.currentTime=0;}catch(_){}};
+    setActiveUI(name,false);
+  }
+  function toggleTrack(name){
+    if(ACTIVE.has(name)) stopTrack(name); else startTrack(name);
+  }
+  function stopAll(){ Object.keys(TRACKS).forEach(stopTrack); }
+
+  if(DOCK){
+    DOCK.querySelectorAll('.ad-btn').forEach(btn=>{
+      btn.addEventListener('click', ()=>toggleTrack(btn.dataset.track), {passive:true});
+    });
+  }
+  if(STOP) STOP.addEventListener('click', stopAll, {passive:true});
+
+  // Volume sliders
+  if(DOCK){
+    DOCK.querySelectorAll('.ad-vol').forEach(wrap=>{
+      const name=wrap.dataset.for, a=audSel(name);
+      const rng=wrap.querySelector('input[type=\"range\"]');
+      if(!rng) return;
+      rng.addEventListener('input',()=>{ if(a) a.volume=parseFloat(rng.value); },{passive:true});
+    });
+  }
+
+  // Try to autoplay Storm immediately
+  tryAutoStartStorm();
+})();
+</script>
+
 
 </body>
 </html>
