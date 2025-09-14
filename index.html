@@ -12,7 +12,7 @@
   #stage{position:fixed;inset:0;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
   #frame{position:relative;height:100dvh;width:min(100dvw,calc(100dvh*9/16));border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:#000;box-shadow:0 20px 80px rgba(0,0,0,.55);}
   /* Optional background; drop a gallery.jpg next to this file if you want it */
-  #frame::before{content:"";position:absolute;inset:0;z-index:0;background:url("gallery.jpg") center/auto 100% no-repeat;filter:saturate(105%) brightness(95%);background-position:center 15%;}
+#frame::before{content:"";position:absolute;inset:0;z-index:0;background:url("gallery.jpg") center/auto 100% no-repeat;filter:saturate(105%) brightness(95%);background-position:center 25%;}
   #content{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:10px;padding:0 0 10px 0;}
   .carousel{position:relative;height:var(--rowH);width:100%;background:var(--glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:12px;border:1px solid rgba(255,255,255,.08);overflow:hidden;}
   #track{position:relative;width:100%;height:100%;display:flex;align-items:center;gap:var(--gap);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;scroll-snap-type:x mandatory;scroll-snap-stop:always;padding:0 var(--gap);scrollbar-width:none;touch-action:pan-x;cursor:grab;}
@@ -21,16 +21,62 @@
   .card{flex:0 0 var(--basis);height:calc(100%/var(--scaleCenter));scroll-snap-align:center;display:flex;align-items:center;justify-content:center;transform:scale(var(--scaleSide));transition:transform .18s ease,z-index .18s ease,filter .18s ease;position:relative;border-radius:10px;}
   .card img{max-height:100%;width:auto;height:auto;object-fit:contain;display:block;-webkit-user-drag:none;user-select:none;background:#0b0b0c;filter:drop-shadow(0 0 28px rgba(0,0,0,.95)) drop-shadow(0 0 52px rgba(0,0,0,.75));border-radius:8px;}
   .placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:10px;background:linear-gradient(135deg,#1d1d1d,#2b2b2b);border:1px dashed rgba(255,255,255,.18);color:#ccc;padding:10px;text-align:center;}
-  #desc{width:70%;margin:8px auto 0;min-height:4.6vh;max-height:10vh;padding:6px 10px;font-size:13.25px;line-height:1.35;color:#f2f2f2;background:var(--glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:12px;border:1px solid rgba(255,255,255,.08);}
+  #desc{
+    /* Expand description bubble to fit its content rather than clamping */
+    width:85%;
+    margin:8px auto 0;
+    /* Allow the height to grow naturally based on its content */
+    min-height:auto;
+    max-height:none;
+    padding:6px 10px;
+    font-size:13.25px;
+    line-height:1.35;
+    color:#f2f2f2;
+    background:var(--glass);
+    backdrop-filter:blur(6px);
+    -webkit-backdrop-filter:blur(6px);
+    border-radius:12px;
+    border:1px solid rgba(255,255,255,.08);
+  }
   #desc .head{font-weight:700;margin-bottom:2px;}
-  #desc .body{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;text-align:justify;}
+  #desc .body{
+    /* Display the full hook text instead of truncating it with ellipsis */
+    display:block;
+    white-space:normal;
+    overflow:visible;
+    text-overflow:unset;
+    text-align:justify;
+  }
   #modal{position:fixed;inset:0;display:none;overflow:hidden;background:rgba(0,0,0,.88);color:#fff;z-index:9990;}
   #modal.show{display:block;}
-  #mWrap{position:absolute;inset:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;}
+  #mWrap{
+    position:absolute;
+    inset:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    /* Align content to the top and enable scrolling so the full description and swatches are reachable */
+    justify-content:flex-start;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    padding:12px;
+  }
   #mImg{max-width:min(92vw,420px);width:100%;height:auto;border:2px solid #fff;border-radius:8px;margin-bottom:12px;touch-action:none;}
   #mMeta{max-width:min(92vw,420px);width:100%;padding:0 2px;}
   #mTitle{font-weight:800;margin:.25rem 0 .35rem 0;}
-  #mLong{max-height:38vh;overflow:auto;-webkit-overflow-scrolling:touch;font-size:.95rem;line-height:1.45;text-align:justify;}
+  #mLong{
+    /* Allow more room for the analysis text so it isn't cut off at the top */
+    max-height:60vh;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+    font-size:.95rem;
+    line-height:1.45;
+    text-align:justify;
+    /* Add some top padding so the first line of text is not clipped by the container */
+    padding-top:8px;
+    /* Provide left padding so the first character of each line is not clipped against the border */
+    padding-left:8px;
+  }
   #swatches{display:flex;gap:8px;flex-wrap:wrap;margin:.5rem 0 0;}
   .sw{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:8px;border:1px solid rgba(255,255,255,.14);font-size:.85rem;}
   .sw i{display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid rgba(255,255,255,.35);}
@@ -234,9 +280,23 @@ const mLong=document.getElementById('mLong'); const sw=document.getElementById('
 function openModal(getEntry){
   const p=PAINTINGS[activeIndex]; const d=getEntry(p.title);
   const card=track.querySelectorAll('.card')[activeIndex]; const img=card?.querySelector('img');
-  mImg.src=img?.src||''; mImg.alt=`${p.title} — full view`;
+  // Only show the image if a thumbnail is present on the card.  Otherwise
+  // hide the image element entirely so the alt text does not overlay the
+  // description when the artwork thumbnail is missing.  This prevents
+  // clipped text at the top of the modal.
+  if (img && img.src) {
+    mImg.style.display = '';
+    mImg.src = img.src;
+    mImg.alt = `${p.title} — full view`;
+  } else {
+    mImg.style.display = 'none';
+    mImg.src = '';
+    mImg.alt = '';
+  }
   mTitle.textContent=`${p.title} — ${p.artist}${p.year?', '+p.year:''}`;
   mLong.textContent=d?.analysis || d?.hook || 'Description coming soon.';
+  // Ensure the scroll position is reset to the top when opening the modal
+  mLong.scrollTop = 0;
   sw.innerHTML=''; (d?.palette||[]).forEach(hex=>{
     const chip=document.createElement('span'); chip.className='sw';
     const chipColor=document.createElement('i'); chipColor.style.background=hex;
@@ -270,9 +330,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
 
   <!-- Bottom navigation bar -->
   <nav id="no-bottomNav" aria-label="Primary">
-    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrange/" target="_self" rel="noopener">Color Library</a>
-    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrangeV3/" target="_self" rel="noopener">Home</a>
-    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrangeV3/" target="_self" rel="noopener">Illusion Lab</a>
+    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrangeV3/#step2" target="_self" rel="noopener">Color Library</a>
+    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrange/" target="_self" rel="noopener">Home</a>
+    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrangeV3/#step3" target="_self" rel="noopener">Illusion Lab</a>
   </nav>
   <script>
     // Add bottom padding so existing content isn't hidden behind the footer.
