@@ -1,185 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no, maximum-scale=1" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<title>neurOrange • Gallery</title>
+<style>
+  :root{ --glass: rgba(0,0,0,.28); --gap: clamp(24px,7vw,72px); --basis: 21%; --scaleCenter: 1.6; --scaleSide: .80; --rowH: 22vh; }
+  html,body{margin:0;background:#000;color:#fff;-webkit-font-smoothing:antialiased;font-family:ui-sans-serif,-apple-system,Segoe UI,Roboto,Helvetica,Arial;}
+  #stage{position:fixed;inset:0;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
+  #frame{position:relative;height:100dvh;width:min(100dvw,calc(100dvh*9/16));border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:#000;box-shadow:0 20px 80px rgba(0,0,0,.55);}
+  /* Optional background; drop a gallery.jpg next to this file if you want it */
+  #frame::before{content:"";position:absolute;inset:0;z-index:0;background:url("gallery.jpg") center/auto 100% no-repeat;filter:saturate(105%) brightness(95%);}
+  #content{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:10px;padding:0 0 10px 0;}
+  .carousel{position:relative;height:var(--rowH);width:100%;background:var(--glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:12px;border:1px solid rgba(255,255,255,.08);overflow:hidden;}
+  #track{position:relative;width:100%;height:100%;display:flex;align-items:center;gap:var(--gap);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;scroll-snap-type:x mandatory;scroll-snap-stop:always;padding:0 var(--gap);scrollbar-width:none;touch-action:pan-x;cursor:grab;}
+  #track::-webkit-scrollbar{display:none;}
+  .spacer{flex:0 0 60%;height:1px;}
+  .card{flex:0 0 var(--basis);height:calc(100%/var(--scaleCenter));scroll-snap-align:center;display:flex;align-items:center;justify-content:center;transform:scale(var(--scaleSide));transition:transform .18s ease,z-index .18s ease,filter .18s ease;position:relative;border-radius:10px;}
+  .card img{max-height:100%;width:auto;height:auto;object-fit:contain;display:block;-webkit-user-drag:none;user-select:none;background:#0b0b0c;filter:drop-shadow(0 0 28px rgba(0,0,0,.95)) drop-shadow(0 0 52px rgba(0,0,0,.75));border-radius:8px;}
+  .placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;border-radius:10px;background:linear-gradient(135deg,#1d1d1d,#2b2b2b);border:1px dashed rgba(255,255,255,.18);color:#ccc;padding:10px;text-align:center;}
+  #desc{width:70%;margin:8px auto 0;min-height:4.6vh;max-height:10vh;padding:6px 10px;font-size:13.25px;line-height:1.35;color:#f2f2f2;background:var(--glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:12px;border:1px solid rgba(255,255,255,.08);}
+  #desc .head{font-weight:700;margin-bottom:2px;}
+  #desc .body{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;text-overflow:ellipsis;text-align:justify;}
+  #modal{position:fixed;inset:0;display:none;overflow:hidden;background:rgba(0,0,0,.88);color:#fff;z-index:9990;}
+  #modal.show{display:block;}
+  #mWrap{position:absolute;inset:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:12px;}
+  #mImg{max-width:min(92vw,420px);width:100%;height:auto;border:2px solid #fff;border-radius:8px;margin-bottom:12px;touch-action:none;}
+  #mMeta{max-width:min(92vw,420px);width:100%;padding:0 2px;}
+  #mTitle{font-weight:800;margin:.25rem 0 .35rem 0;}
+  #mLong{max-height:38vh;overflow:auto;-webkit-overflow-scrolling:touch;font-size:.95rem;line-height:1.45;text-align:justify;}
+  #swatches{display:flex;gap:8px;flex-wrap:wrap;margin:.5rem 0 0;}
+  .sw{display:flex;align-items:center;gap:6px;padding:4px 6px;border-radius:8px;border:1px solid rgba(255,255,255,.14);font-size:.85rem;}
+  .sw i{display:inline-block;width:16px;height:16px;border-radius:4px;border:1px solid rgba(255,255,255,.35);}
+
+  /* Added bottom navigation bar styling */
+  /* 🍊 neurOrange bottom nav (non-invasive) */
+  #no-bottomNav {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(10px + env(safe-area-inset-bottom));
+    z-index: 2147483000;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+    align-items: center;
+    pointer-events: auto;
+    background: transparent;
+  }
+  .no-btn {
+    flex: 1 1 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 14px;
+    border-radius: 16px;
+    font-weight: 800;
+    text-decoration: none;
+    color: #2b1600;
+    text-shadow: 0 1px 0 rgba(255,255,255,.35);
+    border: 1px solid rgba(0,0,0,.35);
+    /* background gradient defined per button below */
+    box-shadow:
+      0 6px 16px rgba(0,0,0,.35),
+      inset 0 2px 0 rgba(255,255,255,.4),
+      inset 0 -2px 0 rgba(0,0,0,.18);
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+  .no-btn:active {
+    transform: translateY(1px);
+  }
+  /* assign specific gradient backgrounds to each button */
+  #no-bottomNav .no-btn:nth-child(1) {
+    /* Pure orange gradient for Color Library */
+    background: linear-gradient(180deg, #FFC966 0%, #FFA500 35%, #CC8400 100%);
+  }
+  #no-bottomNav .no-btn:nth-child(2) {
+    /* Firefox orange gradient for Home */
+    background: linear-gradient(180deg, #FE9666 0%, #FE5000 35%, #CB4000 100%);
+  }
+  #no-bottomNav .no-btn:nth-child(3) {
+    /* Afterimage orange gradient for Illusion Lab */
+    background: linear-gradient(180deg, #FBAC78 0%, #F9751F 35%, #C75D18 100%);
+  }
+  /* keep page content visible above the footer */
+  .no-padBottom {
+    padding-bottom: 96px;
+  }
+</style>
+</head>
+<body>
+<div id="stage"><div id="frame"><div id="content">
+  <div class="carousel"><div id="track"></div></div>
+  <div id="desc" aria-live="polite"></div>
+</div></div></div>
+
+<div id="modal" role="dialog" aria-modal="true"><div id="mWrap">
+  <img id="mImg" alt=""><div id="mMeta">
+    <div id="mTitle"></div><div id="mLong"></div><div id="swatches"></div>
+  </div>
+</div></div>
+
 <script>
-/* Audio dock — WebAudio gain sliders (iOS-safe), Storm-only autoplay */
+/* If your 1.jpg is Turner (not Monet), swap the first two entries below. */
+const PAINTINGS = [
+  {src:'paintings/1.jpg',  title:'Impression, Sunrise',                 artist:'Claude Monet',              year:'1872'},
+  {src:'paintings/2.jpg',  title:'The Fighting Temeraire',               artist:'J. M. W. Turner',           year:'1839'},
+  {src:'paintings/3.jpg',  title:'Orange and Yellow',                    artist:'Mark Rothko',               year:'1956'},
+  {src:'paintings/4.jpg',  title:'South Wind, Clear Sky',                artist:'Katsushika Hokusai',        year:'c. 1830'},
+  {src:'paintings/5.jpg',  title:'Red Canna',                            artist:'Georgia O’Keeffe',          year:'1924'},
+  {src:'paintings/6.jpg',  title:'Composition VIII',                     artist:'Wassily Kandinsky',         year:'1923'},
+  {src:'paintings/7.jpg',  title:'Synchromy in Orange: To Form',         artist:'Stanton MacDonald-Wright',  year:'1914'},
+  {src:'paintings/8.jpg',  title:'Target with Four Faces',               artist:'Jasper Johns',              year:'1955'},
+  {src:'paintings/9.jpg',  title:'Beginning',                            artist:'Kenneth Noland',            year:'1958'},
+  {src:'paintings/10.jpg', title:'The Night Café',                       artist:'Vincent van Gogh',          year:'1888'},
+  {src:'paintings/11.jpg', title:'Bedroom in Arles',                     artist:'Vincent van Gogh',          year:'1889'},
+  {src:'paintings/12.jpg', title:'Flaming June',                         artist:'Frederic Leighton',         year:'1895'},
+];
 
-(function(){
-  // Track metadata: Storm = ambient (can layer), others = melodic (exclusive)
-  const TRACKS = {
-    sparkle:{ on:'✨', el:'aud_sparkle', group:'melodic' },
-    orange: { on:'🍊', el:'aud_orange',  group:'melodic' },
-    autumn: { on:'🍂', el:'aud_autumn',  group:'melodic' },
-    storm:  { on:'⏱️⛈️'.slice(2), el:'aud_storm',   group:'ambient' } // ⛈️
-  };
+const canon = s => s.toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu,'')
+                  .replace(/[^a-z0-9 ]+/g,' ').replace(/\s+/g,' ').trim();
+const ALIAS = {
+  'red canna':'canna red and orange',
+  'the night cafe':'the night café',
+  'south wind, clear sky (red fuji)':'south wind, clear sky',
+  'red fuji':'south wind, clear sky'
+};
 
-  const DOCK   = document.getElementById('audioDock2');
-  const TOGGLE = document.getElementById('adToggle');
-  const PLAY   = document.getElementById('adPlay');
-  const ACTIVE = new Set();
+async function loadTxt(){ const el=document.getElementById('desc-data'); return el?el.textContent:''; }
 
-  // WebAudio bits
-  let AC = null;                               // AudioContext
-  const SOURCES = Object.create(null);         // name -> MediaElementSource
-  const GAINS   = Object.create(null);         // name -> GainNode
-  let unlocked  = false;
-
-  const btn = n => DOCK?.querySelector(`.ad-btn[data-track="${n}"]`);
-  const vol = n => DOCK?.querySelector(`.ad-vol[data-for="${n}"]`);
-  const aud = n => document.getElementById(TRACKS[n].el);
-
-  function ensureAC(){
-    if (AC) return AC;
-    const Ctx = window.AudioContext || window.webkitAudioContext;
-    if (!Ctx) return null;
-    AC = new Ctx();
-    return AC;
+function parseEntries(text){
+  const t = text.replace(/\r/g,'');
+  const parts = t.split(/\n(?=\d+\.\s+)/);
+  const entries = {};
+  for(const chunk of parts){
+    const head = chunk.match(/^\s*(\d+)\.\s*(.+)\n/);
+    if(!head) continue;
+    const titleLine = head[2].trim();
+    const titleCanon = canon(
+      titleLine
+        .replace(/\s*[—–-].*$/, '')            // strip em/en/hyphen + trailing artist/year
+        .replace(/\s*\(c\.\s*\d+\)\s*$/i, '')   // strip "(c. ####)"
+        .replace(/\s*\(\d{4}\)\s*$/, '')       // strip "(####)"
+    );
+    const hook = (chunk.match(/Hook:\s*([\s\S]*?)(?:\n\n|Analysis:|\nDominant Orange Palette:|$)/i)||[])[1]?.trim()||'';
+    const analysis = (chunk.match(/Analysis:\s*([\s\S]*?)(?:\n\nDominant Orange Palette:|\nDominant Orange Palette:|$)/i)||[])[1]?.trim()||hook;
+    const palette = [...chunk.matchAll(/#[0-9a-f]{6}/gi)].map(m=>m[0].toUpperCase());
+    entries[titleCanon] = {hook, analysis, palette:[...new Set(palette)]};
   }
-  function ensureGraph(name){
-    const a = aud(name);
-    const ac = ensureAC();
-    if (!a || !ac) return null;
-    if (!SOURCES[name]){
-      SOURCES[name] = ac.createMediaElementSource(a);
-      GAINS[name]   = ac.createGain();
-      SOURCES[name].connect(GAINS[name]).connect(ac.destination);
-    }
-    return GAINS[name];
-  }
+  return entries;
+}
 
-  function anyPlaying(){
-    for (const n of ACTIVE){ const a = aud(n); if (a && !a.paused) return true; }
-    return false;
-  }
-  function setIcon(){ if (PLAY) PLAY.textContent = anyPlaying() ? '⏸' : '▶'; }
-  function center(v){ if(v){ v.style.left='50%'; v.style.transform='translateX(-50%)'; } }
+const track = document.getElementById('track');
+const descEl = document.getElementById('desc');
+let activeIndex = 0;
 
-  function deactivate(name){
-    const a = aud(name), b = btn(name), v = vol(name);
-    if (a){ try{ a.pause(); a.currentTime = 0; }catch{} }
-    ACTIVE.delete(name);
-    if (b){ b.textContent = '🌱'; b.classList.remove('active'); }
-    if (v){ v.classList.remove('visible'); }
-  }
+async function build(){
+  const txt = await loadTxt();
+  const parsed = parseEntries(txt);
+  const getEntry = title => parsed[canon(title)] || parsed[ALIAS[canon(title)]||''] || null;
 
-  function activate(name){
-    const info = TRACKS[name]; if (!info) return;
-    if (info.group === 'melodic'){
-      [...ACTIVE].forEach(other=>{
-        if (TRACKS[other].group === 'melodic' && other !== name) deactivate(other);
-      });
-    }
-    const a = aud(name), b = btn(name), v = vol(name);
-    const g = ensureGraph(name);
-    if (g){ try{ ensureAC().resume(); }catch{} }
-    ACTIVE.add(name);
-    // Only start playback if we’re already unlocked (iOS policy)
-    if (a){
-      a.loop = (name === 'storm');
-      if (unlocked) a.play().catch(()=>{});
-    }
-    if (b){ b.textContent = info.on; b.classList.add('active'); }
-    if (v){ center(v); v.classList.add('visible'); }
-    setIcon();
-  }
+  const exists = await Promise.all(PAINTINGS.map(p=>probe(p.src)));
+  track.appendChild(Object.assign(document.createElement('div'),{className:'spacer'}));
 
-  function startStormOnly(){ Object.keys(TRACKS).forEach(deactivate); activate('storm'); }
-
-  function initVolumes(){
-    DOCK?.querySelectorAll('.ad-vol').forEach(w=>{
-      const name = w.getAttribute('data-for');
-      const a    = aud(name);
-      const r    = w.querySelector('input[type="range"]');
-      if (!a || !r) return;
-
-      const g = ensureGraph(name);
-      // Default 0.75; ignore stale zero from storage
-      let v = 0.75;
-      try{
-        const saved = localStorage.getItem('advol_'+name);
-        if (saved !== null){
-          const p = parseFloat(saved);
-          if (!isNaN(p) && p > 0 && p <= 1) v = p;
-        }
-      }catch{}
-
-      if (g){ g.gain.value = v; a.volume = 1; } else { a.volume = v; }
-      r.value = String(v);
-
-      const on = ()=>{
-        const nv = Math.max(0, Math.min(1, parseFloat(r.value)||0));
-        if (g){
-          g.gain.value = nv;
-          // iOS sometimes suspends the context; resume on slider move
-          try{ ensureAC()?.resume(); }catch{}
-        } else {
-          a.volume = nv;
-        }
-        try{ localStorage.setItem('advol_'+name, nv); }catch{}
-      };
-      r.addEventListener('input',  on, {passive:true});
-      r.addEventListener('change', on, {passive:true});
-      // Also unlock on first interaction with the slider wrapper
-      w.addEventListener('pointerdown', ()=>{ if(!unlocked) unlock(); }, {once:true, passive:true});
-    });
-  }
-
-  function unlock(){
-    if (unlocked) return;
-    const ac = ensureAC();
-
-    // Prime each <audio> muted so iOS allows future play
-    Object.keys(TRACKS).forEach(name=>{
-      const a = aud(name); if (!a) return;
-      ensureGraph(name);
-      const prev = a.volume;
-      a.muted = true;
-      const p = a.play();
-      (p && p.then ? p : Promise.resolve()).then(()=>{
-        a.pause(); a.currentTime = 0; a.muted = false; a.volume = prev;
-      }).catch(()=>{ a.muted=false; a.volume=prev; });
-    });
-
-    try{ ac && ac.resume(); }catch{}
-    unlocked = true;             // mark first so activate() will play
-    startStormOnly();            // begin Storm immediately after unlock
-    initVolumes();               // reapply volume -> gain graph
-    document.removeEventListener('pointerdown', unlock, true);
-  }
-
-  function bind(){
-    DOCK?.querySelectorAll('.ad-btn').forEach(b=>{
-      b.addEventListener('click', ()=>{
-        const n = b.getAttribute('data-track');
-        if (ACTIVE.has(n)) deactivate(n); else activate(n);
-      }, {passive:true});
-    });
-    TOGGLE?.addEventListener('click', ()=>{
-      unlock();
-      DOCK.classList.toggle('collapsed');
-      if (!DOCK.classList.contains('collapsed')){
-        ACTIVE.forEach(n=>{ const v = vol(n); if(v){ center(v); v.classList.add('visible'); } });
-      }
+  PAINTINGS.forEach((p,i)=>{
+    const card = document.createElement('div'); card.className='card'; card.dataset.index=i;
+    if(exists[i]){ const img=new Image(); img.decoding='async'; img.src=p.src; img.alt=`${p.title} — ${p.artist}`; card.appendChild(img); }
+    else{ const ph=document.createElement('div'); ph.className='placeholder'; ph.innerHTML=`<div>No image<br><small>${p.title}</small></div>`; card.appendChild(ph); }
+    card.addEventListener('click', ()=>{
+      const cards=[...track.querySelectorAll('.card')]; activeIndex=i;
+      cards[i]?.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+      setTimeout(()=>openModal(getEntry), 220);
+      updateCaption(getEntry);
     }, {passive:true});
-    PLAY?.addEventListener('click', ()=>{
-      if (!unlocked){ unlock(); return; }
-      if (anyPlaying()){
-        ACTIVE.forEach(n=>{ const a=aud(n); if(a) try{ a.pause(); }catch{} });
-      } else {
-        if (ACTIVE.size) ACTIVE.forEach(n=>{ const a=aud(n); if(a) a.play().catch(()=>{}); });
-        else startStormOnly();
-      }
-      setIcon();
-    }, {passive:true});
+    track.appendChild(card);
+  });
 
-    // First gesture unlock (anywhere on page)
-    document.addEventListener('pointerdown', unlock, true);
-  }
+  track.appendChild(Object.assign(document.createElement('div'),{className:'spacer'}));
+  requestAnimationFrame(updateScales);
+  updateCaption(getEntry);
+  window.__getEntry = getEntry;
+}
 
-  initVolumes();
-  // Preselect Storm visually so its slider shows when you expand
-  (function preselect(){ ACTIVE.clear(); ACTIVE.add('storm'); const b=btn('storm'), v=vol('storm'); if(b){ b.textContent = TRACKS.storm.on; b.classList.add('active'); } if(v){ center(v); v.classList.add('visible'); } })();
-  bind();
-  setIcon();
+function probe(src){ return new Promise(res=>{ const im=new Image(); im.onload=()=>res(true); im.onerror=()=>res(false); im.src=src; }); }
 
-  // Optional: quick debug
-  window.__neurOrangeAudio = {AC, GAINS, SOURCES, ACTIVE};
-})();
+let ticking=false;
+function cssVar(n){ return parseFloat(getComputedStyle(document.documentElement).getPropertyValue(n)); }
+function updateScales(){
+  const cards=[...track.querySelectorAll('.card')]; if(!cards.length) return;
+  const cx=track.clientWidth/2, base=track.scrollLeft; let best=0, bestD=1e9;
+  cards.forEach((el,i)=>{ const mid=el.offsetLeft+el.offsetWidth/2-base; const d=Math.abs(mid-cx);
+    if(d<bestD){ bestD=d; best=i; }
+    const s=cssVar('--scaleCenter')-(cssVar('--scaleCenter')-cssVar('--scaleSide'))*Math.min(1,d/(track.clientWidth*.5));
+    el.style.transform=`scale(${s.toFixed(3)})`; el.style.zIndex=String(1000-Math.round(d));
+  });
+  if(best!==activeIndex){ activeIndex=best; updateCaption(window.__getEntry); }
+}
+track.addEventListener('scroll', ()=>{ if(ticking) return; ticking=true; requestAnimationFrame(()=>{updateScales(); ticking=false;}); }, {passive:true});
+addEventListener('resize', updateScales, {passive:true});
+
+function updateCaption(getEntry){
+  const p=PAINTINGS[activeIndex]; if(!p) return;
+  const d=getEntry?getEntry(p.title):null;
+  const short=d?.hook || 'Description coming soon.';
+  descEl.innerHTML=`<div class="head">${p.title} — ${p.artist} ${p.year?`(${p.year})`:''}</div>
+                    <div class="body">${short}</div>`;
+}
+
+/* Modal */
+const modal=document.getElementById('modal'); const mWrap=document.getElementById('mWrap');
+const mImg=document.getElementById('mImg'); const mTitle=document.getElementById('mTitle');
+const mLong=document.getElementById('mLong'); const sw=document.getElementById('swatches');
+
+function openModal(getEntry){
+  const p=PAINTINGS[activeIndex]; const d=getEntry(p.title);
+  const card=track.querySelectorAll('.card')[activeIndex]; const img=card?.querySelector('img');
+  mImg.src=img?.src||''; mImg.alt=`${p.title} — full view`;
+  mTitle.textContent=`${p.title} — ${p.artist}${p.year?', '+p.year:''}`;
+  mLong.textContent=d?.analysis || d?.hook || 'Description coming soon.';
+  sw.innerHTML=''; (d?.palette||[]).forEach(hex=>{
+    const chip=document.createElement('span'); chip.className='sw';
+    const chipColor=document.createElement('i'); chipColor.style.background=hex;
+    const label=document.createElement('span'); label.textContent=hex.toUpperCase();
+    chip.appendChild(chipColor); chip.appendChild(label); sw.appendChild(chip);
+  });
+  modal.classList.add('show');
+}
+modal.addEventListener('click', ()=>modal.classList.remove('show'), {passive:true});
+
+/* Swipe in fullscreen */
+let sx=0,sy=0,dx=0,dy=0;
+mWrap.addEventListener('touchstart',e=>{const t=e.touches[0]; sx=t.clientX; sy=t.clientY;},{passive:true});
+mWrap.addEventListener('touchmove',e=>{const t=e.touches[0]; dx=t.clientX-sx; dy=t.clientY-sy;},{passive:true});
+mWrap.addEventListener('touchend',()=>{ if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)){ activeIndex=(activeIndex+(dx<0?1:-1)+PAINTINGS.length)%PAINTINGS.length; openModal(window.__getEntry);} dx=dy=0;},{passive:true});
+
+document.addEventListener('DOMContentLoaded', build);
 </script>
+
+  <!-- Bottom navigation bar -->
+  <nav id="no-bottomNav" aria-label="Primary">
+    <a class="no-btn" href="https://github.com/vahetharoutounian-stack/neurOrangeV3/" target="_self" rel="noopener">Color Library</a>
+    <a class="no-btn" href="https://github.com/vahetharoutounian-stack/neurOrange/" target="_self" rel="noopener">Home</a>
+    <a class="no-btn" href="https://github.com/vahetharoutounian-stack/neurOrange/" target="_self" rel="noopener">Illusion Lab</a>
+  </nav>
+  <script>
+    // Add bottom padding so existing content isn't hidden behind the footer.
+    (function() {
+      document.body.classList.add('no-padBottom');
+    })();
+  </script>
+
+<!-- All 12 descriptions & palettes are embedded below (so it works over file:// too). -->
+<script id="desc-data" type="text/plain">
+1. The Fighting Temeraire (1839) – J.M.W. Turner
+Hook: In Turner’s The Fighting Temeraire, an old warship glides toward its twilight under a sky ablaze with orange. The painting’s glowing sunset – equal parts beauty and melancholy – floods the scene with golden haze, casting the dying day as an elegy for the magnificent vessel’s final journey.
+Analysis: Joseph Mallord William Turner, a luminary of British Romanticism, painted The Fighting Temeraire as a tribute to a celebrated warship from the Battle of Trafalgar. By 1838 the once-mighty Temeraire was obsolete, towed up the Thames to be scrapped. Turner, steeped in the Romantic tradition of painting nature and light to evoke emotion, seized on this event to explore the passing of an era. Historically, the work reflects the dawn of industrial modernity: the age of sail yielding to the age of steam. The blazing sunset that consumes the right side of the canvas is anything but incidental – Turner invents a sumptuous sky to imbue the scene with symbolic weight
+nationalgallery.org.uk
+. The veteran ship, rendered in ghostly whites and pale golds, is hauled by a small black steam tug. This poignant contrast between the dignified, pale sailing ship and the sooty tugboat encapsulates the theme of old giving way to new. Turner’s background as a master of maritime scenes and atmospheric effects allowed him to turn a prosaic tugboat journey into a national epic on canvas.
+Compositionally, Turner places the Temeraire off-center, bathed in the last light of the setting sun. The sky dominates: billowing clouds are drenched in oranges, coppers, and reds, their reflections dancing on the calm water below. The sun itself is a white-hot disk sinking low, counterbalanced by the cool rising moon in the opposite corner – a subtle reminder of cycles and transitions. The use of orange and its neighboring hues is especially significant. Turner was renowned for his innovative use of vivid color and light, and here the intense sunset orange becomes the emotional core of the painting. The entire scene is suffused with a luminous orange glow that Turner deliberately exaggerated for effect (even placing the sunset in an historically inaccurate position) to heighten the drama. The warmth of the sky contrasts with the ship’s pale form, almost turning the Temeraire into a spectral silhouette against a furnace-like backdrop. This contrast not only draws the eye to the ship but also symbolizes how the glory of the past is receding into the brilliant glow of memory.
+The emotional and symbolic function of orange in this masterpiece is profound. Turner’s sunset is a visual poem of farewell – the color of dusk doubling as the color of nostalgia and death. As art critic John Ruskin observed, Turner often used his “most deeply crimsoned sunset skies” to signify death or an ending
+nationalgallery.org.uk
+. In The Fighting Temeraire, the oranges and reds of the sky take on an elegiac tone, marking the end of the ship’s life and, by extension, the end of an epoch in naval history. The fiery sun and “blazing copper hues”
+nationalgallery.org.uk
+ swirling through the clouds create a sense of sublime grandeur, as if nature itself pays homage to the retiring hero. This burnt-orange twilight can be read as the ship’s soul departing in glory – a final blaze of color before darkness. Yet orange here is not solely mournful; it is also majestic and celebratory. The golden-orange light gilds the Temeraire, almost transforming the ship into a monument. It conveys a patriotic reverence (fitting for a subject cherished by Turner as “his darling”) and a bittersweet beauty in decay. In essence, Turner wields orange as the color of sunset metaphor: a radiant ending that is both mournful and resplendent. The viewer is left with a lingering glow of awe and sadness, the sky’s orange embers symbolizing memory, honor, and the inexorable passage of time
+nationalgallery.org.uk
+nationalgallery.org.uk
+.
+Dominant Orange Palette:
+#FFD6A5
+#FF9900
+#FF4500
+#B87333
+#8B4513
+
+2. Impression, Sunrise (1872) – Claude Monet
+Hook: From a harbor wrapped in morning haze, a small orange sun ignites the sky and water with a single pulse of color. The scene is barely drawn—masts, smoke, and boats dissolve into atmosphere—but that ember of orange turns fog into dawn and the sketch into sensation.
+Analysis: Painted at Le Havre, Monet’s home port, Impression, Sunrise reduces the world to light, air, and temperature. The composition is spare: ribbons of cool blue-greys, a low horizon, two rowboats set against industrial silhouettes. Brushwork is quick and open; forms appear and evaporate. The painting’s audacity lies in how little is described and how much is felt—vision caught in the act of waking. The orange sun (and its vertical reflection) serves as the work’s chromatic axis. By placing a warm, high-chroma disk amid desaturated cools, Monet turns orange into the measure of the hour: it calibrates distance, announces time, and makes the fog legible as light. Contemporary critics bristled at the “unfinished” look, but Monet’s goal wasn’t finish—it was immediacy. The little sun proves that color can carry truth: a dot of orange describes dawn more honestly than detail could. Symbolically, the color reads as ignition—a quiet beginning with industrial smoke on the horizon—suggesting a modern day rising as surely as the sun itself.
+Dominant Orange Palette:
+#FF6A00
+#FF7F32
+#FF9E57
+#FFB347
+#C85A2E
+
+3. Orange and Yellow (1956) – Mark Rothko
+Hook: Two weightless fields hover—yellow above, orange below—breathing against one another until the air itself seems colored. The edges feather and glow, so that light feels like it’s coming from within the paint.
+Analysis: Rothko’s Orange and Yellow belongs to the mature “Color Field” period in which figure and ground vanish and color becomes the subject. The rectangles aren’t hard forms; their edges are stained and blurred, letting the hues mingle with the ground so the image reads less as objects than as atmosphere. Scale matters: standing close, the canvas surrounds peripheral vision and the fields seem to float. The yellow panel acts like a soft lamp, the orange like warmth you can sense more than see; together they stage a quiet encounter rather than an image.
+Rothko spoke of painting “tragedy, ecstasy, doom,” not pictures. The shallow space, the slow shift of saturation, and the tremor at the borders are the means by which feeling is delivered directly—without symbol or narrative. Orange functions as presence and temperature: a humane, steady heat that anchors the body. Yellow functions as light and openness: a gentle lift that invites breath. Where they meet, a seam of vibration forms; it is this relational edge—the moment of near-overlap—that generates the painting’s sensation of stillness charged with life.
+Dominant Orange Palette:
+#FFA826
+#FFD24A
+#FFE38A
+#FF8A33
+#FFF3C1
+
+4. South Wind, Clear Sky (Red Fuji) (c. 1830) – Katsushika Hokusai
+Hook: At dawn after a south wind and cloudless night, Fuji’s flank flares vermilion against a pale sky. With almost no detail—just planes of color—the mountain seems to breathe warm light.
+Analysis: Part of Thirty-Six Views of Mount Fuji, “Red Fuji” captures a brief seasonal phenomenon in early autumn when the morning sun ignites the mountain’s southern face. Hokusai reduces the world to three elements: the triangular mass of Fuji, a luminous sky, and a small belt of clouds. The woodblock’s power lies in its calm geometry and in the orchestration of inks: warm gradations across the slope shift from earthy russet to orange-vermillion, while the sky lifts from ochre at the horizon to clear blue aloft. The simplicity is deceptive; subtle bokashi (tone gradation) and carefully registered layers make the color planes feel atmospheric rather than flat.
+Culturally, Fuji embodies stability; here, orange light momentarily transforms that permanence—an image of constancy quickened by time. The warm banding reads as heat and altitude together: the mountain’s mass receives and reflects the day’s first energy. Where warm slope meets cool sky, a quiet vibration forms, intensifying both. Orange thus functions as revelation rather than ornament: it names the hour, the weather, and the mountain’s presence in one chromatic event.
+Dominant Orange Palette:
+#C94F2D
+#D9642A
+#E87334
+#F08A3C
+#F4A460
+
+5. Red Canna (1924) – Georgia O’Keeffe
+Hook: Petals swell into landscape—scarlet and tangerine fold over one another until the bloom reads as heat and breath. The viewer is pulled inside a living flare of orange.
+Analysis: By the mid-1920s O’Keeffe had turned magnification into a modernist language. In Red Canna, she crops so closely that the flower overfills the frame; the subject dissolves into sweeping curves and fields of color. Rather than treating the blossom as a botanical specimen, she lets form and hue do the work of expression—smooth paint, large scale, and almost no background so that space is created by color alone
+christies.com
+. The petals modulate from deep red-orange in the recesses to softer peach and apricot at the lit edges, generating volume without visible brush texture
+christies.com
+. The result is less a still life than an immersive terrain.
+O’Keeffe often rejected literal symbolism, yet color here carries meaning. Orange operates as vitality—sun-warmed, sensuous, and modern. In the 1920s, new synthetic pigments (like cadmium orange) made such saturation possible; placed at large scale, the hue becomes environment as much as object
+christies.com
+. Viewers brought their own readings—sensual, spiritual, or simply optical—but the painting’s force lies in what orange does: it concentrates heat at the core, releases it along the ruffled rims, and turns a single bloom into an experience of radiance.
+Dominant Orange Palette:
+#B22222
+#FF4500
+#FF8C00
+#FFA07A
+#FFD1A1
+
+6. Composition VIII (1923) – Wassily Kandinsky
+Hook: Circles, vectors, zigzags, and arcs stage a geometric conversation on a pale ground. Orange acts like a warm bass note—quiet but steady—over which sharper lines and cooler shapes play.
+Analysis: Painted during Kandinsky’s Bauhaus years, Composition VIII turns color and form into an abstract score. The picture’s shallow space is organized not by perspective but by relationships: large circles drift like planets; triangles and diagonals cut rhythms through them; fine black lines serve as melody, connecting zones. The work synthesizes the artist’s theories from Point and Line to Plane—each shape has character, and each color has timbre. Within that orchestra, orange stabilizes and warms the field. It anchors intersections where diagonals might otherwise feel brittle, and it dilates the sense of light at the edges of circles. Against cool blues and sharp blacks, the orange passages read as humane, slightly elastic intervals that make the composition breathe. The pleasure of the painting isn’t a single focal point but the way movement accumulates: glance to the right and a quick staccato of small forms appears; look left and a long legato curve answers. Orange threads these moments together so the eye travels without fatigue—structure with a pulse rather than a grid.
+Dominant Orange Palette:
+#E67E22
+#FFA500
+#FFB347
+#F4A460
+#D2691E
+
+7. Synchromy in Orange: To Form (1914) – Stanton MacDonald-Wright
+Hook: Swirls, bands, and planes hinge around a dominant orange “key,” as if a chord were struck and space answered. Forms don’t illustrate; they unfold—color composes them in real time.
+Analysis: With Synchromism, MacDonald-Wright and Morgan Russell proposed that color could function like music—intervals, harmonies, key centers—without descriptive subject matter. In this canvas, orange provides the tonic: a warm gravitational field that pulls neighboring hues into relation. Broken arcs and wedge-like shapes suggest rotation and growth rather than fixed outline. Cooler accents (blue-greens and violets) act as complementary counterpoints, making orange flare and recede rhythmically. The picture’s movement is not narrative but physiological: the eye traverses temperature and value, feeling the “push-pull” of chroma. Orange’s role is decisive—it binds the composition’s energy into a legible whole, a synchromy where structure emerges from color rather than line.
+Dominant Orange Palette:
+#FFA500
+#FF8C00
+#FFB347
+#E67E22
+#F4A460
+
+8. Target with Four Faces (1955) – Jasper Johns
+Hook: A cool, impersonal target—concentric bands, including a humming orange ring—sits beneath a box of cropped faces. It’s a sign and a painting at once, an image that looks back without eyes.
+Analysis: Johns turned readymade symbols (flags, numbers, targets) into high-stakes painting by treating them not as pictures of things but as the things themselves. In Target with Four Faces, encaustic’s waxy opacity traps newsprint and brushwork under a literal surface; the target’s rings remain anonymous and exact, yet palpably handmade. Above, four plaster casts—cropped at the eyes—complicate seeing: looking becomes self-conscious, even theatrical. Orange matters here as temperature and attention; its band warms the otherwise impartial schema, pulling the gaze into the center while the faces refuse return. Between hot chroma and blind portrait, Johns stages a tension between the generic and the intimate, the public sign and the private body.
+Dominant Orange Palette:
+#FFA500
+#FF8C00
+#FF7F50
+#F4A460
+#E07A5F
+
+9. Beginning (1958) – Kenneth Noland
+Hook: Concentric rings focus on a vermilion-orange core—color as genesis. The target doesn’t aim outward; it draws you in.
+Analysis: Beginning marks Noland’s shift into stain painting and the Washington Color School. Thinned pigment seeps into unprimed canvas, erasing brush texture so color reads as atmosphere rather than skin. A hot orange-red nucleus sits against a complementary blue ring; a breath of unpainted canvas (off-white) pauses the eye before a dark perimeter cinches the field. The relationships—not depiction—do the work: orange as heat and presence; blue as cool distance; the raw ground as light. The result is musical rather than descriptive—chords of hue held in equilibrium. Orange functions as first cause: a dawn note that centers attention and radiates quietly, making the painting feel both simple and inevitable.
+Dominant Orange Palette:
+#E34A33
+#FFA500
+#F5D0A9
+#F4A460
+#000000
+
+10. The Night Café (1888) – Vincent van Gogh
+Hook: Orange and green collide in this feverish nocturne; gaslight glows like a low-grade fever while a billiard table tilts forward like a warning. Heat, insomnia, and moral unease are painted into the room.
+Analysis: Van Gogh called The Night Café a place where one can “ruin oneself, go mad, or commit a crime.” Instead of neutral shadows, he slams complementary pairs—vermilion walls and jaundiced lamps against a poisonous green table—so color does psychological work. Loose, vibrating halos around the globes of light amplify agitation; the steep perspective pushes the table at us like a coffin. Figures slump into themselves while the proprietor stares back, making the viewer complicit. Orange functions here as mood and temperature, clinging to the walls like stale heat; pressed against green, it becomes nauseating rather than cozy. This is not the convivial warmth of Café Terrace but the claustrophobic glow of a night that won’t end—orange as moral warning, not comfort.
+Dominant Orange Palette:
+#FF6347
+#FF4500
+#CD5C5C
+#FF8C00
+#C04000
+
+11. Bedroom in Arles (1889) – Vincent van Gogh
+Hook: A simple room tilts toward us—bed, chairs, pictures—drawn with childlike directness. Orange wood glows against cool blue walls until the little space feels oddly steadfast.
+Analysis: Van Gogh simplified forms, flattened shadows, and used high-key color so the room would feel “restful” and “unshakable.” Perspective is intentionally skewed; outlines are emphatic; paint is laid in even patches. The orange of the bed and chairs isn’t decorative—it carries presence and warmth, a human temperature embedded in things. Cool walls and floor steady the composition, while the warm furniture establishes a pulse that keeps the eye circulating. Instead of light effects, color relationships build the atmosphere: blue for calm and distance, orange for nearness and lived use. The result is intimate without sentimentality, a portrait of rest carved from geometry and two complementary families.
+Dominant Orange Palette:
+#FF9E57
+#F4A460
+#E0702A
+#C68642
+#8B4513
+
+12. Flaming June (1895) – Frederic Leighton
+Hook: A young woman sleeps wrapped in translucent orange silk, glowing like embers against marble and sea. The color doesn’t decorate the figure; it seems to inhabit her, as if summer had pooled into cloth.
+Analysis: Leighton’s academic craft—flawless anatomy, controlled glazing, and a square, frieze-like format—meets a chromatic dare: make orange carry the scene. Glazes stack until the drapery appears lit from within; oleander flowers (poisonous) complicate the serenity. Orange here does double duty: literal warmth (Mediterranean light) and symbolic heat (beauty’s nearness to danger). The pose spirals the eye along folds toward the sleeping face, then back out across the ledge to the sea, as if to measure the distance between repose and the world’s bright edge. It’s an image of leisure and mortality at once—silk as sunset, rest as a brief season.
+Dominant Orange Palette:
+#FF7F50
+#FFA500
+#E97451
+#FFDAB9
+#CD5C5C
+</script>
+</body>
+</html>
