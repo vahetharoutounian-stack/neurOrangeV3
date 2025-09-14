@@ -222,6 +222,23 @@
     .mini-box .btn.mini{padding:8px 12px;font-size:12px;border-radius:10px;background:#151515;border:1px solid #333;color:#eee}
     .mini-box .btn.mini:active{transform:translateY(1px)}
     
+
+/* === Capture Favorites Overlay (full-screen) === */
+#capOverlay{position:fixed;inset:0;z-index:2147483647;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,.92);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);}
+#capOverlay.active{display:flex;}
+#capWrap{width:min(100vw, 1000px);max-width:96vw;padding:20px 14px 28px 14px;display:flex;flex-direction:column;gap:14px}
+#capToolbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;justify-content:center}
+.cap-pill{border:1px solid rgba(255,255,255,.25);color:#fff;background:#111;padding:8px 10px;border-radius:999px;font-weight:800;font-size:12px;cursor:pointer}
+.cap-pill.active{outline:2px solid rgba(255,166,77,.85);outline-offset:0}
+#capGrid{display:grid;gap:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:10px}
+.cap-tile{position:relative;min-height:140px;border-radius:10px;overflow:hidden;background:#000;color:#fff;display:flex;align-items:flex-start;justify-content:flex-start}
+.cap-tile .name{position:absolute;left:10px;top:8px;font-size:16px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+.cap-tile .hex{position:absolute;left:10px;top:30px;font-size:12px;font-weight:800;text-shadow:0 1px 2px rgba(0,0,0,.45)}
+.cap-tile .desc{position:absolute;left:10px;right:10px;top:50px;font-size:12px;line-height:1.35;text-shadow:0 1px 2px rgba(0,0,0,.35)}
+#capFooter{display:flex;flex-direction:column;align-items:center;gap:8px;margin-top:8px}
+#capHint{font-size:11px;opacity:.8;color:#ddd}
+#capClose{background:#111;border:1px solid #444;color:#fff;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:800}
+
 </style>
 
 <style id="injected-swatches-poem">
@@ -822,6 +839,7 @@
 
     <div class="bottomBar">
       <button id="btnBackBottom" class="btn">Back</button>
+      <button id="btnCaptureFav" class="btn">Capture Favorites</button>
       <button id="btnNextBottom" class="btn">Next</button>
     </div>
   </div>
@@ -2159,6 +2177,127 @@ drawPreview();
   updatePlayIcon();
 })();
   </script>
+
+
+<!-- Capture Favorites Overlay -->
+<div id="capOverlay" role="dialog" aria-modal="true" aria-label="Capture Favorites">
+  <div id="capWrap">
+    <div id="capToolbar">
+      <button class="cap-pill" data-grid="3x3">3×3</button>
+      <button class="cap-pill" data-grid="3x4">3×4</button>
+      <button class="cap-pill" data-grid="3x5">3×5</button>
+      <button class="cap-pill" data-grid="3x6">3×6</button>
+      <button class="cap-pill" data-grid="4x8">4×8</button>
+    </div>
+    <div id="capGrid"></div>
+    <div id="capFooter">
+      <div id="capHint">Tip: take a screenshot of this screen to save your favorites.</div>
+      <button id="capClose">Close</button>
+    </div>
+  </div>
+</div>
+
+
+<script>
+(function initCaptureFavorites() {
+  function getFavorites() {
+    try{
+      if (window.state && Array.isArray(state.favorites) && state.favorites.length) return state.favorites;
+    }catch(e){}
+    return [];
+  }
+
+  function applyGrid(gridEl, favs, cols, rows) {
+    gridEl.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+    while (gridEl.firstChild) gridEl.removeChild(gridEl.firstChild);
+    const cap = cols*rows;
+    for (let i=0; i<cap; i++) {
+      const tile = document.createElement('div');
+      tile.className = 'cap-tile';
+      if (favs[i]) {
+        const { name, hex, fun, significance } = favs[i];
+        const h = String(hex||'').toUpperCase();
+        tile.style.background = h || '#000';
+        const n = document.createElement('div'); n.className='name'; n.textContent = String(name||'').trim() || h;
+        const hx = document.createElement('div'); hx.className='hex'; hx.textContent = h;
+        const d = document.createElement('div'); d.className='desc';
+        d.textContent = [fun, significance].filter(Boolean).join(' ');
+        tile.appendChild(n); tile.appendChild(hx); tile.appendChild(d);
+      } else {
+        tile.style.background = '#000';
+      }
+      gridEl.appendChild(tile);
+    }
+  }
+
+  function sizeFromToken(tok) {
+    const [c, r] = tok.split('x').map(v=>parseInt(v,10));
+    return {cols:c||3, rows:r||3};
+  }
+
+  function openOverlay(defaultToken) {
+    const overlay = document.getElementById('capOverlay');
+    const gridEl  = document.getElementById('capGrid');
+    const pills   = Array.from(document.querySelectorAll('.cap-pill'));
+    const favs    = getFavorites();
+    if (!favs.length) {
+      gridEl.innerHTML = '';
+      overlay.classList.add('active');
+      const msg = document.createElement('div');
+      msg.style.cssText='color:#fff;text-align:center;padding:20px;font-weight:800';
+      msg.textContent = 'No favorites yet — add some in Step 2 to use Capture.';
+      gridEl.appendChild(msg);
+      return;
+    }
+    const normalized = favs.map(f => ({
+      name: String(f.name||'').trim(),
+      hex:  String(f.hex||'').toUpperCase(),
+      fun:  String(f.fun||'').trim(),
+      significance: String(f.significance||'').trim()
+    }));
+
+    function setActive(tok){
+      pills.forEach(p=>p.classList.toggle('active', p.dataset.grid===tok));
+      const {cols, rows} = sizeFromToken(tok);
+      applyGrid(gridEl, normalized, cols, rows);
+    }
+
+    pills.forEach(p=>{
+      if (!p.__bound) {
+        p.__bound = true;
+        p.addEventListener('click', ()=> setActive(p.dataset.grid), {passive:true});
+      }
+    });
+
+    const tok = defaultToken || '3x5';
+    overlay.classList.add('active');
+    setActive(tok);
+  }
+
+  function closeOverlay(){
+    const overlay = document.getElementById('capOverlay');
+    overlay.classList.remove('active');
+  }
+
+  window.exportFavoritesModal = function(){ openOverlay('3x5'); };
+
+  (function bindClose(){
+    const b = document.getElementById('capClose');
+    if (b && !b.__bound){
+      b.__bound = true;
+      b.addEventListener('click', closeOverlay, {passive:true});
+    }
+  })();
+
+  (function bindButton(){
+    const b = document.getElementById('btnCaptureFav');
+    if (b && !b.__bound){
+      b.__bound = true;
+      b.addEventListener('click', ()=> window.exportFavoritesModal(), {passive:true});
+    }
+  })();
+})();
+</script>
 
 </body>
 </html>
