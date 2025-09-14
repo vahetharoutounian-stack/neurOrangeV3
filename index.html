@@ -78,6 +78,9 @@
   #no-bottomNav .no-btn:nth-child(1) {
     /* Pure orange gradient for Color Library */
     background: linear-gradient(180deg, #FFC966 0%, #FFA500 35%, #CC8400 100%);
+    /* Make the label slightly smaller and prevent wrapping so it stays on one line */
+    font-size: 0.85rem;
+    white-space: nowrap;
   }
   #no-bottomNav .no-btn:nth-child(2) {
     /* Firefox orange gradient for Home */
@@ -243,9 +246,9 @@ document.addEventListener('DOMContentLoaded', build);
 
   <!-- Bottom navigation bar -->
   <nav id="no-bottomNav" aria-label="Primary">
-    <a class="no-btn" href="https://github.com/vahetharoutounian-stack/neurOrangeV3/" target="_self" rel="noopener">Color Library</a>
-    <a class="no-btn" href="https://github.com/vahetharoutounian-stack/neurOrange/" target="_self" rel="noopener">Home</a>
-    <a class="no-btn" href="https://github.com/vahetharoutounian-stack/neurOrange/" target="_self" rel="noopener">Illusion Lab</a>
+    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrange/" target="_self" rel="noopener">Color Library</a>
+    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrangeV3/" target="_self" rel="noopener">Home</a>
+    <a class="no-btn" href="https://vahetharoutounian-stack.github.io/neurOrangeV3/" target="_self" rel="noopener">Illusion Lab</a>
   </nav>
   <script>
     // Add bottom padding so existing content isn't hidden behind the footer.
