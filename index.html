@@ -12,7 +12,7 @@
   #stage{position:fixed;inset:0;display:grid;place-items:center;padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);}
   #frame{position:relative;height:100dvh;width:min(100dvw,calc(100dvh*9/16));border-radius:18px;overflow:hidden;border:1px solid rgba(255,255,255,.08);background:#000;box-shadow:0 20px 80px rgba(0,0,0,.55);}
   /* Optional background; drop a gallery.jpg next to this file if you want it */
-  #frame::before{content:"";position:absolute;inset:0;z-index:0;background:url("gallery.jpg") center/auto 100% no-repeat;filter:saturate(105%) brightness(95%);}
+  #frame::before{content:"";position:absolute;inset:0;z-index:0;background:url("gallery.jpg") center/auto 100% no-repeat;filter:saturate(105%) brightness(95%);background-position:center 15%;}
   #content{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;gap:10px;padding:0 0 10px 0;}
   .carousel{position:relative;height:var(--rowH);width:100%;background:var(--glass);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);border-radius:12px;border:1px solid rgba(255,255,255,.08);overflow:hidden;}
   #track{position:relative;width:100%;height:100%;display:flex;align-items:center;gap:var(--gap);overflow-x:auto;overflow-y:hidden;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;scroll-snap-type:x mandatory;scroll-snap-stop:always;padding:0 var(--gap);scrollbar-width:none;touch-action:pan-x;cursor:grab;}
@@ -160,7 +160,9 @@ function parseEntries(text){
 
 const track = document.getElementById('track');
 const descEl = document.getElementById('desc');
-let activeIndex = 0;
+// Default index of the painting shown when the page loads (1 = The Fighting Temeraire)
+const DEFAULT_PAINTING_INDEX = 1;
+let activeIndex = DEFAULT_PAINTING_INDEX;
 
 async function build(){
   const txt = await loadTxt();
@@ -184,8 +186,18 @@ async function build(){
   });
 
   track.appendChild(Object.assign(document.createElement('div'),{className:'spacer'}));
-  requestAnimationFrame(updateScales);
-  updateCaption(getEntry);
+  // Scroll the default painting into view and set the active index.
+  const cards = track.querySelectorAll('.card');
+  const defaultCard = cards[DEFAULT_PAINTING_INDEX];
+  if (defaultCard) {
+    defaultCard.scrollIntoView({ behavior: 'auto', inline: 'center', block: 'nearest' });
+  }
+  activeIndex = DEFAULT_PAINTING_INDEX;
+  // Perform scale and caption updates after a frame to ensure layout is ready.
+  requestAnimationFrame(() => {
+    updateScales();
+    updateCaption(getEntry);
+  });
   window.__getEntry = getEntry;
 }
 
@@ -242,6 +254,18 @@ mWrap.addEventListener('touchmove',e=>{const t=e.touches[0]; dx=t.clientX-sx; dy
 mWrap.addEventListener('touchend',()=>{ if(Math.abs(dx)>40 && Math.abs(dx)>Math.abs(dy)){ activeIndex=(activeIndex+(dx<0?1:-1)+PAINTINGS.length)%PAINTINGS.length; openModal(window.__getEntry);} dx=dy=0;},{passive:true});
 
 document.addEventListener('DOMContentLoaded', build);
+
+// Move the entire screen slightly when the carousel scrolls.  This creates a sense that the phone screen travels with the painting swipes.
+document.addEventListener('DOMContentLoaded', ()=>{
+  const frameEl = document.getElementById('frame');
+  if (track && frameEl) {
+    track.addEventListener('scroll', () => {
+      // Translate the frame in the opposite direction of the scroll.  Use a small factor to avoid excessive movement.
+      const offset = track.scrollLeft;
+      frameEl.style.transform = `translateX(${-(offset * 0.05)}px)`;
+    }, {passive:true});
+  }
+});
 </script>
 
   <!-- Bottom navigation bar -->
